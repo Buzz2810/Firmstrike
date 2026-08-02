@@ -27988,7 +27988,7 @@ var require_pino = __commonJS({
     function pinoBundlerAbsolutePath(p) {
       try {
         const path9 = __require("path");
-        const outputDir = "D:\\Project\\FirmStrike\\artifacts\\api-server\\dist";
+        const outputDir = "C:\\Users\\HP\\Downloads\\Firmstrike Project\\FirmStrike\\artifacts\\api-server\\dist";
         return path9.resolve(outputDir, p.replace(/^\.\//, ""));
       } catch (e) {
         const f = new Function("p", "return new URL(p, import.meta.url).pathname");
