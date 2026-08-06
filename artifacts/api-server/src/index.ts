@@ -1,12 +1,22 @@
-import app from "./app";
-import { logger } from "./lib/logger";
+import dotenv from "dotenv";
+import path from "node:path";
 
-const rawPort = process.env["PORT"];
+// Load .env first
+dotenv.config({
+  path: path.resolve(process.cwd(), "../../.env"),
+});
+console.log("Working directory:", process.cwd());
+console.log("Env path:", path.resolve(process.cwd(), ".env"));
+console.log("DATABASE_URL =", process.env.DATABASE_URL);
+
+// Import the app only after .env has been loaded
+const { default: app } = await import("./app");
+const { logger } = await import("./lib/logger");
+
+const rawPort = process.env.PORT;
 
 if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+  throw new Error("PORT environment variable is required but was not provided.");
 }
 
 const port = Number(rawPort);
