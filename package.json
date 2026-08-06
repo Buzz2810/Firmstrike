@@ -12,8 +12,12 @@
   "devDependencies": {
     "@rollup/rollup-win32-x64-msvc": "^4.62.3",
     "@tailwindcss/oxide-win32-x64-msvc": "^4.3.3",
+    "cross-env": "^10.1.0",
     "lightningcss-win32-x64-msvc": "^1.33.0",
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
   }
 }
