@@ -175,7 +175,9 @@ export default function FirmwareLibrary() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {firmwares.map((fw) => (
+                    { [...firmwares]
+                        .sort((a, b) => b.id - a.id)
+                        .map((fw) => (
                       <TableRow key={fw.id} className="border-border/50 hover:bg-muted/10 transition-colors group">
                         <TableCell className="font-mono text-sm">
                           <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center">
