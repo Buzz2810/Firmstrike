@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { createReadStream } from "node:fs";
 import { db, aiReportsTable, scanResultsTable, firmwareTable, vulnerabilitiesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { generateTextReport } from "../services/pdf.js";
+import { generatePdfReport } from "../services/pdf.js";
 import { generateAiReport } from "../services/gemini.js";
 import { generateSbomReport, getSbomReport } from "../services/sbom-generator.js";
 
@@ -13,7 +13,7 @@ router.get("/reports/pdf/:firmwareId", async (req, res): Promise<void> => {
   const firmwareId = parseInt(raw, 10);
   if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
 
-  const { path: reportFilePath, size } = await generateTextReport(firmwareId);
+  const { size } = await generatePdfReport(firmwareId);
   const [scan] = await db.select().from(scanResultsTable).where(eq(scanResultsTable.firmwareId, firmwareId));
 
   res.json({
@@ -30,12 +30,18 @@ router.get("/reports/pdf/:firmwareId/download", async (req, res): Promise<void> 
   const firmwareId = parseInt(raw, 10);
   if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
 
-  const { path: reportFilePath } = await generateTextReport(firmwareId);
+  const { path: reportFilePath } = await generatePdfReport(firmwareId);
   const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, firmwareId));
 
-  res.setHeader("Content-Type", "text/plain");
-  res.setHeader("Content-Disposition", `attachment; filename="viv-report-${fw?.name ?? firmwareId}.txt"`);
-  createReadStream(reportFilePath).pipe(res);
+  const safeName = (fw?.name ?? `firmware-${firmwareId}`).replace(/[^a-zA-Z0-9._-]/g, "_");
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="viv-report-${safeName}.pdf"`);
+
+  const fileStream = createReadStream(reportFilePath);
+  fileStream.on("error", () => {
+    if (!res.headersSent) res.status(500).json({ error: "Failed to stream report" });
+  });
+  fileStream.pipe(res);
 });
 
 router.get("/reports/ai-summary/:firmwareId", async (req, res): Promise<void> => {
@@ -125,16 +131,17 @@ router.get("/reports/sbom/:firmwareId/download/:format", async (req, res): Promi
   const format = req.params.format;
   if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
   if (!["cyclonedx", "spdx", "csv"].includes(format)) { res.status(400).json({ error: "Unsupported format" }); return; }
+  const formatKey = format as "cyclonedx" | "spdx" | "csv";
 
   const sbom = await getSbomReport(firmwareId);
   if (!sbom) { res.status(404).json({ error: "SBOM report not found" }); return; }
 
-  const filePath = format === "cyclonedx" ? sbom.report.cyclonedxPath : format === "spdx" ? sbom.report.spdxPath : sbom.report.csvPath;
+  const filePath = formatKey === "cyclonedx" ? sbom.report.cyclonedxPath : formatKey === "spdx" ? sbom.report.spdxPath : sbom.report.csvPath;
   const types = { cyclonedx: "application/json", spdx: "application/json", csv: "text/csv" } as const;
   const names = { cyclonedx: "cyclonedx", spdx: "spdx", csv: "sbom" } as const;
 
-  res.setHeader("Content-Type", types[format]);
-  res.setHeader("Content-Disposition", `attachment; filename="firmware-${firmwareId}-${names[format]}.${format === "csv" ? "csv" : "json"}"`);
+  res.setHeader("Content-Type", types[formatKey]);
+  res.setHeader("Content-Disposition", `attachment; filename="firmware-${firmwareId}-${names[formatKey]}.${formatKey === "csv" ? "csv" : "json"}"`);
   createReadStream(filePath).pipe(res);
 });
 

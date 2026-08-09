@@ -27,3 +27,7 @@ export function firmwareExtractPath(id: number): string {
 export function reportPath(firmwareId: number): string {
   return path.join(reportsDir, `firmware-${firmwareId}-report.txt`);
 }
+
+export function reportPdfPath(firmwareId: number): string {
+  return path.join(reportsDir, `firmware-${firmwareId}-report.pdf`);
+}
