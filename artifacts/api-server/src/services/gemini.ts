@@ -19,7 +19,7 @@ const ai = new GoogleGenAI({
   apiKey: GEMINI_API_KEY,
 });
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 const REQUEST_TIMEOUT = 120_000;
 

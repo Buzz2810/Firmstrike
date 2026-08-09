@@ -27,6 +27,7 @@ async function buildAll() {
     // Examples of unbundleable packages:
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
+    // - ship non-JS data files loaded via relative fs paths at runtime (e.g. pdfkit's .afm font metrics)
     external: [
       "*.node",
       "sharp",
@@ -100,6 +101,8 @@ async function buildAll() {
       "puppeteer",
       "puppeteer-core",
       "electron",
+      "pdfkit",
+      "fontkit",
     ],
     sourcemap: "linked",
     plugins: [
