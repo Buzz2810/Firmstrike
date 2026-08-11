@@ -8,9 +8,37 @@ import { eq } from "drizzle-orm";
 import { ensureDataDirs, firmwareUploadPath } from "../lib/paths.js";
 
 const router: IRouter = Router();
-const upload = multer({ dest: "/tmp/viv-uploads", limits: { fileSize: 500 * 1024 * 1024 } });
 
-function toFirmwareResponse(f: typeof firmwareTable.$inferSelect) {
+/**
+ * Firmware upload configuration
+ *
+ * Maximum file size: 2 GB
+ *
+ * No fileFilter is used intentionally.
+ * This allows:
+ * .bin
+ * .img
+ * .dd
+ * .fw
+ * .firmware
+ * .efi
+ * .rom
+ * .iso
+ * .gz
+ * .tar
+ * .zip
+ * and any other firmware/image/archive file.
+ */
+const upload = multer({
+  dest: "/tmp/viv-uploads",
+  limits: {
+    fileSize: 2 * 1024 * 1024 * 1024, // 2 GB
+  },
+});
+
+function toFirmwareResponse(
+  f: typeof firmwareTable.$inferSelect,
+) {
   return {
     id: f.id,
     name: f.name,
@@ -24,26 +52,50 @@ function toFirmwareResponse(f: typeof firmwareTable.$inferSelect) {
   };
 }
 
+/**
+ * GET all firmware
+ */
 router.get("/firmware", async (_req, res): Promise<void> => {
-  const all = await db.select().from(firmwareTable).orderBy(firmwareTable.uploadedAt);
+  const all = await db
+    .select()
+    .from(firmwareTable)
+    .orderBy(firmwareTable.uploadedAt);
+
   res.json(all.map(toFirmwareResponse));
 });
 
+/**
+ * POST firmware metadata
+ */
 router.post("/firmware", async (req, res): Promise<void> => {
-  const { name, hashValue, fileSize, architecture, vendor, version } = req.body;
-  if (!name || !hashValue || !fileSize) {
-    res.status(400).json({ error: "Missing required fields" });
-    return;
-  }
-  const [fw] = await db.insert(firmwareTable).values({
+  const {
     name,
     hashValue,
     fileSize,
-    architecture: architecture || "UNKNOWN",
-    vendor: vendor || null,
-    version: version || null,
-    status: "pending",
-  }).returning();
+    architecture,
+    vendor,
+    version,
+  } = req.body;
+
+  if (!name || !hashValue || !fileSize) {
+    res.status(400).json({
+      error: "Missing required fields",
+    });
+    return;
+  }
+
+  const [fw] = await db
+    .insert(firmwareTable)
+    .values({
+      name,
+      hashValue,
+      fileSize,
+      architecture: architecture || "UNKNOWN",
+      vendor: vendor || null,
+      version: version || null,
+      status: "pending",
+    })
+    .returning();
 
   await db.insert(activityTable).values({
     type: "scan_started",
@@ -56,72 +108,206 @@ router.post("/firmware", async (req, res): Promise<void> => {
   res.status(201).json(toFirmwareResponse(fw));
 });
 
-router.post("/firmware/upload", upload.single("file"), async (req, res): Promise<void> => {
-  if (!req.file) {
-    res.status(400).json({ error: "No firmware file provided" });
-    return;
-  }
+/**
+ * POST firmware binary/image
+ *
+ * Accepts ANY file type.
+ * Maximum size: 2 GB.
+ */
+router.post(
+  "/firmware/upload",
+  upload.single("file"),
+  async (req, res): Promise<void> => {
+    if (!req.file) {
+      res.status(400).json({
+        error: "No firmware file provided",
+      });
+      return;
+    }
 
-  await ensureDataDirs();
+    try {
+      await ensureDataDirs();
 
-  const hash = createHash("sha256");
-  await new Promise<void>((resolve, reject) => {
-    createReadStream(req.file!.path)
-      .on("data", (chunk: Buffer) => hash.update(chunk))
-      .on("end", () => resolve())
-      .on("error", reject);
-  });
-  const hashValue = hash.digest("hex");
-  const originalName = req.file.originalname || `firmware_${Date.now()}.bin`;
+      /**
+       * Calculate SHA-256 using a stream.
+       * The complete firmware is NOT loaded into RAM.
+       */
+      const hash = createHash("sha256");
 
-  const [fw] = await db.insert(firmwareTable).values({
-    name: originalName,
-    hashValue,
-    fileSize: req.file.size,
-    architecture: "UNKNOWN",
-    vendor: null,
-    version: null,
-    status: "pending",
-  }).returning();
+      await new Promise<void>((resolve, reject) => {
+        const stream = createReadStream(req.file!.path);
 
-  const destPath = firmwareUploadPath(fw.id, originalName);
-  const { rename } = await import("node:fs/promises");
-  await rename(req.file.path, destPath);
+        stream.on("data", (chunk: Buffer) => {
+          hash.update(chunk);
+        });
 
-  await db.update(firmwareTable).set({ filePath: destPath }).where(eq(firmwareTable.id, fw.id));
+        stream.on("end", resolve);
+        stream.on("error", reject);
+      });
 
-  await db.insert(activityTable).values({
-    type: "scan_started",
-    message: `Firmware "${originalName}" uploaded (${(req.file.size / 1024 / 1024).toFixed(1)} MB)`,
-    severity: "info",
-    firmwareId: fw.id,
-    firmwareName: originalName,
-  });
+      const hashValue = hash.digest("hex");
 
-  res.status(201).json(toFirmwareResponse({ ...fw, filePath: destPath }));
-});
+      const originalName =
+        req.file.originalname ||
+        `firmware_${Date.now()}.bin`;
 
-router.get("/firmware/:id", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const id = parseInt(raw, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
-  if (!fw) { res.status(404).json({ error: "Firmware not found" }); return; }
-  res.json(toFirmwareResponse(fw));
-});
+      /**
+       * Create DB record.
+       */
+      const [fw] = await db
+        .insert(firmwareTable)
+        .values({
+          name: originalName,
+          hashValue,
+          fileSize: req.file.size,
+          architecture: "UNKNOWN",
+          vendor: null,
+          version: null,
+          status: "pending",
+        })
+        .returning();
 
-router.delete("/firmware/:id", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const id = parseInt(raw, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+      /**
+       * Move uploaded temporary file to permanent
+       * firmware storage.
+       */
+      const destPath = firmwareUploadPath(
+        fw.id,
+        originalName,
+      );
 
-  const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
-  if (fw?.filePath) {
-    try { await unlink(fw.filePath); } catch { /* ignore */ }
-  }
+      const { rename } = await import("node:fs/promises");
 
-  await db.delete(firmwareTable).where(eq(firmwareTable.id, id));
-  res.sendStatus(204);
-});
+      await rename(
+        req.file.path,
+        destPath,
+      );
+
+      await db
+        .update(firmwareTable)
+        .set({
+          filePath: destPath,
+        })
+        .where(eq(firmwareTable.id, fw.id));
+
+      await db.insert(activityTable).values({
+        type: "scan_started",
+        message: `Firmware "${originalName}" uploaded (${(
+          req.file.size /
+          1024 /
+          1024
+        ).toFixed(1)} MB)`,
+        severity: "info",
+        firmwareId: fw.id,
+        firmwareName: originalName,
+      });
+
+      res
+        .status(201)
+        .json(
+          toFirmwareResponse({
+            ...fw,
+            filePath: destPath,
+          }),
+        );
+    } catch (err) {
+      console.error(
+        "[Firmware Upload Error]",
+        err,
+      );
+
+      /**
+       * Remove temporary upload if something
+       * failed after multer created it.
+       */
+      try {
+        if (req.file?.path) {
+          await unlink(req.file.path);
+        }
+      } catch {
+        // ignore cleanup errors
+      }
+
+      res.status(500).json({
+        error: "Firmware upload failed",
+      });
+    }
+  },
+);
+
+/**
+ * GET firmware by ID
+ */
+router.get(
+  "/firmware/:id",
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
+
+    const id = parseInt(raw, 10);
+
+    if (isNaN(id)) {
+      res.status(400).json({
+        error: "Invalid id",
+      });
+      return;
+    }
+
+    const [fw] = await db
+      .select()
+      .from(firmwareTable)
+      .where(eq(firmwareTable.id, id));
+
+    if (!fw) {
+      res.status(404).json({
+        error: "Firmware not found",
+      });
+      return;
+    }
+
+    res.json(toFirmwareResponse(fw));
+  },
+);
+
+/**
+ * DELETE firmware
+ */
+router.delete(
+  "/firmware/:id",
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
+
+    const id = parseInt(raw, 10);
+
+    if (isNaN(id)) {
+      res.status(400).json({
+        error: "Invalid id",
+      });
+      return;
+    }
+
+    const [fw] = await db
+      .select()
+      .from(firmwareTable)
+      .where(eq(firmwareTable.id, id));
+
+    if (fw?.filePath) {
+      try {
+        await unlink(fw.filePath);
+      } catch {
+        // ignore
+      }
+    }
+
+    await db
+      .delete(firmwareTable)
+      .where(eq(firmwareTable.id, id));
+
+    res.sendStatus(204);
+  },
+);
 
 export default router;

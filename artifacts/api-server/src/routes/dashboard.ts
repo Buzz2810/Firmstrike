@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, firmwareTable, scanResultsTable, vulnerabilitiesTable, malwareHashesTable, cveMatchesTable, activityTable } from "@workspace/db";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -56,18 +56,43 @@ router.get("/dashboard/risk-distribution", async (_req, res): Promise<void> => {
 });
 
 router.get("/dashboard/threat-trend", async (_req, res): Promise<void> => {
+  // Fetch all completed scans with vulnerability data
+  const allScans = await db.select().from(scanResultsTable);
+
+  // Convert riskLevel to a numeric threat score
+  function riskToScore(riskLevel: string | null, vulnCount: number | null): number {
+    const base = riskLevel === "critical" ? 80 : riskLevel === "high" ? 55 : riskLevel === "medium" ? 35 : 10;
+    const bonus = Math.min(20, Math.floor((vulnCount ?? 0) * 2));
+    return Math.min(100, base + bonus);
+  }
+
+  // Group scans by calendar date (UTC)
+  const scansByDate = new Map<string, typeof allScans>();
+  for (const s of allScans) {
+    const dateStr = s.startedAt.toISOString().split("T")[0];
+    const existing = scansByDate.get(dateStr) ?? [];
+    existing.push(s);
+    scansByDate.set(dateStr, existing);
+  }
+
+  // Build 14-day window
   const trend = [];
   const now = new Date();
   for (let i = 13; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
     const dateStr = date.toISOString().split("T")[0];
-    trend.push({
-      date: dateStr,
-      score: Math.floor(30 + Math.random() * 60),
-      firmwareCount: Math.floor(Math.random() * 3),
-    });
+    const dayScans = scansByDate.get(dateStr) ?? [];
+
+    let dayScore = 0;
+    if (dayScans.length > 0) {
+      const totalScore = dayScans.reduce((sum, s) => sum + riskToScore(s.riskLevel, s.vulnerabilitiesFound), 0);
+      dayScore = Math.round(totalScore / dayScans.length);
+    }
+
+    trend.push({ date: dateStr, score: dayScore, firmwareCount: dayScans.length });
   }
+
   res.json(trend);
 });
 

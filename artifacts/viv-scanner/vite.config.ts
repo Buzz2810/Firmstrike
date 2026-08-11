@@ -68,6 +68,8 @@ export default defineConfig(async ({ mode }) => {
         "/api": {
           target: env.API_PROXY_TARGET ?? "http://localhost:8080",
           changeOrigin: true,
+          timeout: 0,
+          proxyTimeout: 0,
         },
       },
     },
@@ -80,6 +82,8 @@ export default defineConfig(async ({ mode }) => {
         "/api": {
           target: env.API_PROXY_TARGET ?? "http://localhost:8080",
           changeOrigin: true,
+          timeout: 0,
+          proxyTimeout: 0,
         },
       },
     },

@@ -11,7 +11,6 @@ import ScanDetails from "@/pages/ScanDetails";
 import SecurityAnalysis from "@/pages/SecurityAnalysis";
 import CveIntelligence from "@/pages/CveIntelligence";
 import MalwareDetection from "@/pages/MalwareDetection";
-import QemuEmulation from "@/pages/QemuEmulation";
 import ReportsAi from "@/pages/ReportsAi";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -40,9 +39,6 @@ function Router() {
       </Route>
       <Route path="/malware/:firmwareId">
         {(params) => <Layout><MalwareDetection /></Layout>}
-      </Route>
-      <Route path="/emulation/:firmwareId">
-        {(params) => <Layout><QemuEmulation /></Layout>}
       </Route>
       <Route path="/reports/:firmwareId">
         {(params) => <Layout><ReportsAi /></Layout>}

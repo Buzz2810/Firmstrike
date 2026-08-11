@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { createReadStream } from "node:fs";
-import { db, aiReportsTable, scanResultsTable, firmwareTable, vulnerabilitiesTable } from "@workspace/db";
+import { db, aiReportsTable, scanResultsTable, firmwareTable, vulnerabilitiesTable, malwareHashesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { generatePdfReport } from "../services/pdf.js";
 import { generateAiReport } from "../services/gemini.js";
@@ -147,8 +147,25 @@ router.get("/reports/sbom/:firmwareId/download/:format", async (req, res): Promi
 
 router.get("/reports/history", async (_req, res): Promise<void> => {
   const scans = await db.select().from(scanResultsTable).orderBy(desc(scanResultsTable.startedAt)).limit(20);
+  // Fetch all malware hashes to compute real threat scores
+  const allHashes = await db.select().from(malwareHashesTable);
+  const hashScoreByFirmware = new Map<number, number>();
+  const hashGrouped = new Map<number, typeof allHashes>();
+  for (const h of allHashes) {
+    const existing = hashGrouped.get(h.firmwareId) ?? [];
+    existing.push(h);
+    hashGrouped.set(h.firmwareId, existing);
+  }
+  for (const [fwId, hashes] of hashGrouped.entries()) {
+    const avg = hashes.reduce((s, h) => s + h.threatScore, 0) / hashes.length;
+    hashScoreByFirmware.set(fwId, Math.round(avg));
+  }
+
   const history = await Promise.all(scans.map(async (s) => {
     const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, s.firmwareId));
+    // Prefer real malware-derived threat score; fall back to risk-level estimate
+    const threatScore = hashScoreByFirmware.get(s.firmwareId) ??
+      (s.riskLevel === "critical" ? 75 : s.riskLevel === "high" ? 50 : s.riskLevel === "medium" ? 25 : 5);
     return {
       id: s.id,
       firmwareId: s.firmwareId,
@@ -157,7 +174,7 @@ router.get("/reports/history", async (_req, res): Promise<void> => {
       status: s.status,
       riskLevel: s.riskLevel || "low",
       vulnerabilitiesFound: s.vulnerabilitiesFound || 0,
-      threatScore: s.riskLevel === "critical" ? 87 : s.riskLevel === "high" ? 62 : s.riskLevel === "medium" ? 38 : 15,
+      threatScore,
     };
   }));
   res.json(history);

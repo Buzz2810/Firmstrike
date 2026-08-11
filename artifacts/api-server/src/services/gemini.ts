@@ -10,14 +10,13 @@ import { logger } from "../lib/logger.js";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!GEMINI_API_KEY) {
-  throw new Error(
-    "GEMINI_API_KEY is not configured. Please add it to your .env file."
+  logger.warn(
+    "GEMINI_API_KEY is not set. AI report generation will use the local fallback analyser."
   );
 }
 
-const ai = new GoogleGenAI({
-  apiKey: GEMINI_API_KEY,
-});
+// Lazily create the AI client only when the key is available
+const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
 const GEMINI_MODEL = "gemini-flash-latest";
 
@@ -569,6 +568,15 @@ export async function generateAiReport(
   ctx: ScanContext
 ): Promise<AiReportContent> {
 
+  // If no API key, skip Gemini entirely and use the local fallback
+  if (!ai) {
+    logger.info(
+      { firmware: ctx.firmwareName },
+      "GEMINI_API_KEY absent — using local fallback report."
+    );
+    return fallbackReport(ctx);
+  }
+
   const prompt = buildPrompt(ctx);
 
   const MAX_RETRIES = 2;
@@ -792,6 +800,8 @@ function sanitizeReport(
  */
 
 export async function checkGeminiHealth(): Promise<boolean> {
+
+  if (!ai) return false;
 
   try {
 

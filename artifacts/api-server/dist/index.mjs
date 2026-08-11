@@ -1082,8 +1082,8 @@ var require_depd = __commonJS({
       return deprecate;
     }
     function eehaslisteners(emitter, type) {
-      var count2 = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
-      return count2 > 0;
+      var count = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
+      return count > 0;
     }
     function isignored(namespace) {
       if (process.noDeprecation) {
@@ -18652,14 +18652,14 @@ var require_urlencoded = __commonJS({
       };
     }
     function parameterCount(body, limit) {
-      let count2 = 0;
+      let count = 0;
       let index = -1;
       do {
-        count2++;
-        if (count2 > limit) return void 0;
+        count++;
+        if (count > limit) return void 0;
         index = body.indexOf("&", index + 1);
       } while (index !== -1);
-      return count2;
+      return count;
     }
   }
 });
@@ -21872,13 +21872,13 @@ var require_mediaType = __commonJS({
       return spec.q > 0;
     }
     function quoteCount(string4) {
-      var count2 = 0;
+      var count = 0;
       var index = 0;
       while ((index = string4.indexOf('"', index)) !== -1) {
-        count2++;
+        count++;
         index++;
       }
-      return count2;
+      return count;
     }
     function splitKeyValuePair(str) {
       var index = str.indexOf("=");
@@ -23183,8 +23183,8 @@ var require_send = __commonJS({
       }
     }
     function hasListeners(emitter, type) {
-      var count2 = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
-      return count2 > 0;
+      var count = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
+      return count > 0;
     }
     function normalizeList(val, name) {
       var list = [].concat(val || []);
@@ -28310,7 +28310,7 @@ var require_pino = __commonJS({
     function pinoBundlerAbsolutePath(p) {
       try {
         const path10 = __require("path");
-        const outputDir = "D:\\Desktop\\Firmstrike\\FirmStrike\\artifacts\\api-server\\dist";
+        const outputDir = "C:\\Users\\kamte\\Documents\\Final_project\\FirmStrike\\artifacts\\api-server\\dist";
         return path10.resolve(outputDir, p.replace(/^\.\//, ""));
       } catch (e) {
         const f = new Function("p", "return new URL(p, import.meta.url).pathname");
@@ -34332,11 +34332,11 @@ var require_binaryParsers = __commonJS({
         var array2 = [];
         var i2;
         if (dimension.length > 1) {
-          var count2 = dimension.shift();
-          for (i2 = 0; i2 < count2; i2++) {
+          var count = dimension.shift();
+          for (i2 = 0; i2 < count; i2++) {
             array2[i2] = parse3(dimension, elementType2);
           }
-          dimension.unshift(count2);
+          dimension.unshift(count);
         } else {
           for (i2 = 0; i2 < dimension[0]; i2++) {
             array2[i2] = parseElement(elementType2);
@@ -39452,10 +39452,10 @@ var init_subquery = __esm({
     init_entity();
     Subquery = class {
       static [entityKind] = "Subquery";
-      constructor(sql3, fields, alias, isWith = false, usedTables = []) {
+      constructor(sql2, fields, alias, isWith = false, usedTables = []) {
         this._ = {
           brand: "Subquery",
-          sql: sql3,
+          sql: sql2,
           selectedFields: fields,
           alias,
           isWith,
@@ -39910,19 +39910,19 @@ var init_sql = __esm({
         return new SQL([this]);
       }
     };
-    ((sql22) => {
+    ((sql2) => {
       function empty() {
         return new SQL([]);
       }
-      sql22.empty = empty;
+      sql2.empty = empty;
       function fromList(list) {
         return new SQL(list);
       }
-      sql22.fromList = fromList;
+      sql2.fromList = fromList;
       function raw(str) {
         return new SQL([new StringChunk(str)]);
       }
-      sql22.raw = raw;
+      sql2.raw = raw;
       function join(chunks, separator) {
         const result = [];
         for (const [i, chunk] of chunks.entries()) {
@@ -39933,24 +39933,24 @@ var init_sql = __esm({
         }
         return new SQL(result);
       }
-      sql22.join = join;
+      sql2.join = join;
       function identifier(value) {
         return new Name(value);
       }
-      sql22.identifier = identifier;
+      sql2.identifier = identifier;
       function placeholder2(name2) {
         return new Placeholder(name2);
       }
-      sql22.placeholder = placeholder2;
+      sql2.placeholder = placeholder2;
       function param2(value, encoder) {
         return new Param(value, encoder);
       }
-      sql22.param = param2;
+      sql2.param = param2;
     })(sql || (sql = {}));
     ((SQL2) => {
       class Aliased {
-        constructor(sql22, fieldAlias) {
-          this.sql = sql22;
+        constructor(sql2, fieldAlias) {
+          this.sql = sql2;
           this.fieldAlias = fieldAlias;
         }
         static [entityKind] = "SQL.Aliased";
@@ -43306,8 +43306,8 @@ var init_dialect = __esm({
           return "none";
         }
       }
-      sqlToQuery(sql22, invokeSource) {
-        return sql22.toQuery({
+      sqlToQuery(sql2, invokeSource) {
+        return sql2.toQuery({
           casing: this.casing,
           escapeName: this.escapeName,
           escapeParam: this.escapeParam,
@@ -46049,10 +46049,10 @@ var init_raw = __esm({
     init_entity();
     init_query_promise();
     PgRaw = class extends QueryPromise {
-      constructor(execute, sql3, query, mapBatchResult) {
+      constructor(execute, sql2, query, mapBatchResult) {
         super();
         this.execute = execute;
-        this.sql = sql3;
+        this.sql = sql2;
         this.query = query;
         this.mapBatchResult = mapBatchResult;
       }
@@ -46372,8 +46372,8 @@ var init_db = __esm({
 });
 
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.20.0_pg@8.20.0/node_modules/drizzle-orm/cache/core/cache.js
-async function hashQuery(sql3, params) {
-  const dataToHash = `${sql3}-${JSON.stringify(params)}`;
+async function hashQuery(sql2, params) {
+  const dataToHash = `${sql2}-${JSON.stringify(params)}`;
   const encoder = new TextEncoder();
   const data = encoder.encode(dataToHash);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -46644,8 +46644,8 @@ var init_session = __esm({
         ).all();
       }
       /** @internal */
-      async count(sql22, token) {
-        const res = await this.execute(sql22, token);
+      async count(sql2, token) {
+        const res = await this.execute(sql2, token);
         return Number(
           res[0]["count"]
         );
@@ -46921,8 +46921,8 @@ var init_session2 = __esm({
           if (isPool) session.client.release();
         }
       }
-      async count(sql22) {
-        const res = await this.execute(sql22);
+      async count(sql2) {
+        const res = await this.execute(sql2);
         return Number(
           res["rows"][0]["count"]
         );
@@ -50453,8 +50453,8 @@ var init_az = __esm({
 });
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v4/locales/be.js
-function getBelarusianPlural(count2, one, few, many) {
-  const absCount = Math.abs(count2);
+function getBelarusianPlural(count, one, few, many) {
+  const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -53755,8 +53755,8 @@ var init_pt = __esm({
 });
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v4/locales/ru.js
-function getRussianPlural(count2, one, few, many) {
-  const absCount = Math.abs(count2);
+function getRussianPlural(count, one, few, many) {
+  const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -58949,7 +58949,10 @@ var init_users = __esm({
       role: text("role").notNull().default("analyst"),
       createdAt: timestamp("created_at").notNull().defaultNow()
     });
-    insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true });
+    insertUserSchema = createInsertSchema(usersTable).omit({
+      id: true,
+      createdAt: true
+    });
   }
 });
 
@@ -59190,13 +59193,27 @@ function hashPassword(password) {
 function generateToken(userId) {
   return Buffer.from(`${userId}:${Date.now()}:viv_token`).toString("base64");
 }
-var import_express2, router2, auth_default;
+function verifyToken(token) {
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf8");
+    const parts = decoded.split(":");
+    const id = Number(parts[0]);
+    if (!Number.isNaN(id)) return id;
+  } catch (e) {
+  }
+  return null;
+}
+function generateOtp() {
+  return Math.floor(1e5 + Math.random() * 9e5).toString();
+}
+var import_express2, otpStore, router2, auth_default;
 var init_auth = __esm({
   "src/routes/auth.ts"() {
     "use strict";
     import_express2 = __toESM(require_express2(), 1);
     init_src2();
     init_drizzle_orm();
+    otpStore = /* @__PURE__ */ new Map();
     router2 = (0, import_express2.Router)();
     router2.post("/auth/register", async (req, res) => {
       const { username, email: email3, password } = req.body;
@@ -59204,7 +59221,14 @@ var init_auth = __esm({
         res.status(400).json({ error: "Missing required fields" });
         return;
       }
-      const existing = await db.select().from(usersTable).where(eq(usersTable.email, email3));
+      const existing = await db.select({
+        id: usersTable.id,
+        username: usersTable.username,
+        email: usersTable.email,
+        password: usersTable.password,
+        role: usersTable.role,
+        createdAt: usersTable.createdAt
+      }).from(usersTable).where(eq(usersTable.email, email3));
       if (existing.length > 0) {
         res.status(400).json({ error: "Email already registered" });
         return;
@@ -59215,9 +59239,13 @@ var init_auth = __esm({
         password: hashPassword(password),
         role: "analyst"
       }).returning();
-      const token = generateToken(user.id);
+      const otp = generateOtp();
+      const expires = new Date(Date.now() + 5 * 60 * 1e3);
+      otpStore.set(user.email, { code: otp, expires });
       res.status(201).json({
-        token,
+        message: "Registered - verify OTP",
+        otp,
+        expires: expires.toISOString(),
         user: { id: user.id, username: user.username, email: user.email, role: user.role, createdAt: user.createdAt.toISOString() }
       });
     });
@@ -59227,16 +59255,77 @@ var init_auth = __esm({
         res.status(400).json({ error: "Missing required fields" });
         return;
       }
-      const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email3));
+      const [user] = await db.select({
+        id: usersTable.id,
+        username: usersTable.username,
+        email: usersTable.email,
+        password: usersTable.password,
+        role: usersTable.role,
+        createdAt: usersTable.createdAt
+      }).from(usersTable).where(eq(usersTable.email, email3));
       if (!user || user.password !== hashPassword(password)) {
         res.status(401).json({ error: "Invalid credentials" });
         return;
       }
-      const token = generateToken(user.id);
+      const otp = generateOtp();
+      const expires = new Date(Date.now() + 5 * 60 * 1e3);
+      otpStore.set(user.email, { code: otp, expires });
       res.json({
-        token,
+        message: "OTP sent",
+        otp,
+        expires: expires.toISOString(),
         user: { id: user.id, username: user.username, email: user.email, role: user.role, createdAt: user.createdAt.toISOString() }
       });
+    });
+    router2.post("/auth/request-otp", async (req, res) => {
+      const { email: email3 } = req.body;
+      if (!email3) {
+        res.status(400).json({ error: "Missing email" });
+        return;
+      }
+      const [user] = await db.select({
+        id: usersTable.id,
+        username: usersTable.username,
+        email: usersTable.email,
+        password: usersTable.password,
+        role: usersTable.role,
+        createdAt: usersTable.createdAt
+      }).from(usersTable).where(eq(usersTable.email, email3));
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const otp = generateOtp();
+      const expires = new Date(Date.now() + 5 * 60 * 1e3);
+      otpStore.set(user.email, { code: otp, expires });
+      res.json({ message: "OTP generated", otp, expires: expires.toISOString() });
+    });
+    router2.post("/auth/verify-otp", async (req, res) => {
+      const { email: email3, otp } = req.body;
+      if (!email3 || !otp) {
+        res.status(400).json({ error: "Missing fields" });
+        return;
+      }
+      const [user] = await db.select({
+        id: usersTable.id,
+        username: usersTable.username,
+        email: usersTable.email,
+        password: usersTable.password,
+        role: usersTable.role,
+        createdAt: usersTable.createdAt
+      }).from(usersTable).where(eq(usersTable.email, email3));
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const stored = otpStore.get(user.email);
+      if (!stored || stored.code !== otp || stored.expires < /* @__PURE__ */ new Date()) {
+        res.status(400).json({ error: "Invalid or expired OTP" });
+        return;
+      }
+      otpStore.delete(user.email);
+      const token = generateToken(user.id);
+      res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, createdAt: user.createdAt.toISOString() } });
     });
     router2.get("/auth/me", async (req, res) => {
       const auth = req.headers.authorization;
@@ -59244,7 +59333,19 @@ var init_auth = __esm({
         res.status(401).json({ error: "Unauthorized" });
         return;
       }
-      const [user] = await db.select().from(usersTable).limit(1);
+      const id = verifyToken(auth.replace(/Bearer\s+/i, ""));
+      if (!id) {
+        res.status(401).json({ error: "Invalid token" });
+        return;
+      }
+      const [user] = await db.select({
+        id: usersTable.id,
+        username: usersTable.username,
+        email: usersTable.email,
+        password: usersTable.password,
+        role: usersTable.role,
+        createdAt: usersTable.createdAt
+      }).from(usersTable).where(eq(usersTable.id, id));
       if (!user) {
         res.status(404).json({ error: "User not found" });
         return;
@@ -73083,13 +73184,13 @@ var require_stream_writable = __commonJS({
         var buffer = new Array(l);
         var holder = state.corkedRequestsFree;
         holder.entry = entry;
-        var count2 = 0;
+        var count = 0;
         var allBuffers = true;
         while (entry) {
-          buffer[count2] = entry;
+          buffer[count] = entry;
           if (!entry.isBuf) allBuffers = false;
           entry = entry.next;
-          count2 += 1;
+          count += 1;
         }
         buffer.allBuffers = allBuffers;
         doWrite(stream, state, true, state.length, buffer, "", holder.finish);
@@ -75254,15 +75355,30 @@ var init_firmware3 = __esm({
     init_drizzle_orm();
     init_paths();
     router3 = (0, import_express3.Router)();
-    upload = (0, import_multer.default)({ dest: "/tmp/viv-uploads", limits: { fileSize: 500 * 1024 * 1024 } });
+    upload = (0, import_multer.default)({
+      dest: "/tmp/viv-uploads",
+      limits: {
+        fileSize: 2 * 1024 * 1024 * 1024
+        // 2 GB
+      }
+    });
     router3.get("/firmware", async (_req, res) => {
       const all = await db.select().from(firmwareTable).orderBy(firmwareTable.uploadedAt);
       res.json(all.map(toFirmwareResponse));
     });
     router3.post("/firmware", async (req, res) => {
-      const { name, hashValue, fileSize, architecture, vendor, version: version3 } = req.body;
+      const {
+        name,
+        hashValue,
+        fileSize,
+        architecture,
+        vendor,
+        version: version3
+      } = req.body;
       if (!name || !hashValue || !fileSize) {
-        res.status(400).json({ error: "Missing required fields" });
+        res.status(400).json({
+          error: "Missing required fields"
+        });
         return;
       }
       const [fw] = await db.insert(firmwareTable).values({
@@ -75283,71 +75399,123 @@ var init_firmware3 = __esm({
       });
       res.status(201).json(toFirmwareResponse(fw));
     });
-    router3.post("/firmware/upload", upload.single("file"), async (req, res) => {
-      if (!req.file) {
-        res.status(400).json({ error: "No firmware file provided" });
-        return;
-      }
-      await ensureDataDirs();
-      const hash = createHash("sha256");
-      await new Promise((resolve, reject) => {
-        createReadStream(req.file.path).on("data", (chunk) => hash.update(chunk)).on("end", () => resolve()).on("error", reject);
-      });
-      const hashValue = hash.digest("hex");
-      const originalName = req.file.originalname || `firmware_${Date.now()}.bin`;
-      const [fw] = await db.insert(firmwareTable).values({
-        name: originalName,
-        hashValue,
-        fileSize: req.file.size,
-        architecture: "UNKNOWN",
-        vendor: null,
-        version: null,
-        status: "pending"
-      }).returning();
-      const destPath = firmwareUploadPath(fw.id, originalName);
-      const { rename } = await import("node:fs/promises");
-      await rename(req.file.path, destPath);
-      await db.update(firmwareTable).set({ filePath: destPath }).where(eq(firmwareTable.id, fw.id));
-      await db.insert(activityTable).values({
-        type: "scan_started",
-        message: `Firmware "${originalName}" uploaded (${(req.file.size / 1024 / 1024).toFixed(1)} MB)`,
-        severity: "info",
-        firmwareId: fw.id,
-        firmwareName: originalName
-      });
-      res.status(201).json(toFirmwareResponse({ ...fw, filePath: destPath }));
-    });
-    router3.get("/firmware/:id", async (req, res) => {
-      const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const id = parseInt(raw, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid id" });
-        return;
-      }
-      const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
-      if (!fw) {
-        res.status(404).json({ error: "Firmware not found" });
-        return;
-      }
-      res.json(toFirmwareResponse(fw));
-    });
-    router3.delete("/firmware/:id", async (req, res) => {
-      const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const id = parseInt(raw, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid id" });
-        return;
-      }
-      const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
-      if (fw?.filePath) {
+    router3.post(
+      "/firmware/upload",
+      upload.single("file"),
+      async (req, res) => {
+        if (!req.file) {
+          res.status(400).json({
+            error: "No firmware file provided"
+          });
+          return;
+        }
         try {
-          await unlink(fw.filePath);
-        } catch {
+          await ensureDataDirs();
+          const hash = createHash("sha256");
+          await new Promise((resolve, reject) => {
+            const stream = createReadStream(req.file.path);
+            stream.on("data", (chunk) => {
+              hash.update(chunk);
+            });
+            stream.on("end", resolve);
+            stream.on("error", reject);
+          });
+          const hashValue = hash.digest("hex");
+          const originalName = req.file.originalname || `firmware_${Date.now()}.bin`;
+          const [fw] = await db.insert(firmwareTable).values({
+            name: originalName,
+            hashValue,
+            fileSize: req.file.size,
+            architecture: "UNKNOWN",
+            vendor: null,
+            version: null,
+            status: "pending"
+          }).returning();
+          const destPath = firmwareUploadPath(
+            fw.id,
+            originalName
+          );
+          const { rename } = await import("node:fs/promises");
+          await rename(
+            req.file.path,
+            destPath
+          );
+          await db.update(firmwareTable).set({
+            filePath: destPath
+          }).where(eq(firmwareTable.id, fw.id));
+          await db.insert(activityTable).values({
+            type: "scan_started",
+            message: `Firmware "${originalName}" uploaded (${(req.file.size / 1024 / 1024).toFixed(1)} MB)`,
+            severity: "info",
+            firmwareId: fw.id,
+            firmwareName: originalName
+          });
+          res.status(201).json(
+            toFirmwareResponse({
+              ...fw,
+              filePath: destPath
+            })
+          );
+        } catch (err) {
+          console.error(
+            "[Firmware Upload Error]",
+            err
+          );
+          try {
+            if (req.file?.path) {
+              await unlink(req.file.path);
+            }
+          } catch {
+          }
+          res.status(500).json({
+            error: "Firmware upload failed"
+          });
         }
       }
-      await db.delete(firmwareTable).where(eq(firmwareTable.id, id));
-      res.sendStatus(204);
-    });
+    );
+    router3.get(
+      "/firmware/:id",
+      async (req, res) => {
+        const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = parseInt(raw, 10);
+        if (isNaN(id)) {
+          res.status(400).json({
+            error: "Invalid id"
+          });
+          return;
+        }
+        const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
+        if (!fw) {
+          res.status(404).json({
+            error: "Firmware not found"
+          });
+          return;
+        }
+        res.json(toFirmwareResponse(fw));
+      }
+    );
+    router3.delete(
+      "/firmware/:id",
+      async (req, res) => {
+        const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = parseInt(raw, 10);
+        if (isNaN(id)) {
+          res.status(400).json({
+            error: "Invalid id"
+          });
+          return;
+        }
+        const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
+        if (fw?.filePath) {
+          try {
+            await unlink(fw.filePath);
+          } catch {
+          }
+        }
+        await db.delete(firmwareTable).where(eq(firmwareTable.id, id));
+        res.sendStatus(204);
+      }
+    );
     firmware_default = router3;
   }
 });
@@ -75408,7 +75576,7 @@ var init_shell = __esm({
 });
 
 // src/services/extraction.ts
-import { mkdir as mkdir2, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir as mkdir2, readdir, stat, writeFile, readFile } from "node:fs/promises";
 import path2 from "node:path";
 async function walkDir(dir, root, files) {
   let entries;
@@ -75425,15 +75593,25 @@ async function walkDir(dir, root, files) {
       await walkDir(full, root, files);
       continue;
     }
-    const info = await stat(full);
+    let info;
+    try {
+      info = await stat(full);
+    } catch {
+      continue;
+    }
     const lower = entry.name.toLowerCase();
-    const isElf = lower.endsWith(".so") || !lower.includes(".") || lower.endsWith(".bin");
+    const isElf = lower.endsWith(".so") || lower.endsWith(".bin") || !lower.includes(".");
     const isSuspicious = IOT_BINARIES.some((b) => lower.includes(b)) || lower.includes("cgi") || lower.includes("passwd") || lower.includes("config");
     let type = "file";
-    if (lower.endsWith(".cgi") || lower.endsWith(".sh")) type = "script";
-    else if (lower.endsWith(".so")) type = "Shared library";
-    else if (lower.endsWith(".conf") || lower.includes("config") || lower === "passwd") type = "Configuration";
-    else if (isElf) type = "ELF binary";
+    if (lower.endsWith(".cgi") || lower.endsWith(".sh")) {
+      type = "script";
+    } else if (lower.endsWith(".so")) {
+      type = "Shared library";
+    } else if (lower.endsWith(".conf") || lower.includes("config") || lower === "passwd") {
+      type = "Configuration";
+    } else if (isElf) {
+      type = "ELF binary";
+    }
     files.push({
       path: `/${rel}`,
       type,
@@ -75444,35 +75622,123 @@ async function walkDir(dir, root, files) {
   }
 }
 async function extractGzipChunks(firmwarePath, extractPath) {
-  const { readFile: readFile4 } = await import("node:fs/promises");
   const { gunzipSync } = await import("node:zlib");
-  const buf = await readFile4(firmwarePath);
-  let count2 = 0;
+  const buf = await readFile(firmwarePath);
+  let count = 0;
   for (let i = 0; i < buf.length - 2; i++) {
     if (buf[i] === 31 && buf[i + 1] === 139) {
       try {
-        const decompressed = gunzipSync(buf.subarray(i, Math.min(i + 1024 * 1024, buf.length)));
-        await writeFile(path2.join(extractPath, `extracted_${count2}.bin`), decompressed);
-        count2++;
+        const decompressed = gunzipSync(
+          buf.subarray(i, Math.min(i + 1024 * 1024, buf.length))
+        );
+        await writeFile(
+          path2.join(extractPath, `extracted_${count}.bin`),
+          decompressed
+        );
+        count++;
       } catch {
       }
     }
   }
-  return count2;
+  return count;
 }
 function detectArchitectureFromBuffer(buf) {
-  if (buf.length >= 4) {
-    if (buf[0] === 127 && buf[1] === 69 && buf[2] === 76 && buf[3] === 70) {
-      const arch = buf[18];
-      if (arch === 40) return "ARM";
-      if (arch === 8) return "MIPS";
-      if (arch === 3) return "x86";
-      if (arch === 62) return "x86_64";
+  if (buf.length < 20) return "UNKNOWN";
+  if (buf[0] !== 127 || buf[1] !== 69 || buf[2] !== 76 || buf[3] !== 70) {
+    return "UNKNOWN";
+  }
+  const littleEndian = buf[5] === 1;
+  const machine = littleEndian ? buf.readUInt16LE(18) : buf.readUInt16BE(18);
+  switch (machine) {
+    case 3:
+      return "x86";
+    case 8:
+      return "MIPS";
+    case 20:
+      return "PowerPC";
+    case 21:
+      return "PowerPC64";
+    case 40:
+      return "ARM";
+    case 42:
+      return "SuperH";
+    case 62:
+      return "x86_64";
+    case 183:
+      return "ARM64";
+    case 243:
+      return "RISC-V";
+    default:
+      return `ELF (${machine})`;
+  }
+}
+async function detectArchitectureFromFiles(extractPath, files) {
+  for (const file2 of files) {
+    try {
+      const fullPath = path2.join(
+        extractPath,
+        file2.path.replace(/^\/+/, "")
+      );
+      const buf = await readFile(fullPath);
+      const architecture = detectArchitectureFromBuffer(buf);
+      if (architecture !== "UNKNOWN") {
+        return architecture;
+      }
+    } catch {
     }
-    if (buf[0] === 234 || buf[1] === 255) return "ARM";
-    if (buf.subarray(0, 4).toString() === "\x7FELF") return "ARM";
   }
   return "UNKNOWN";
+}
+function detectVendor(stringsOutput, files) {
+  const haystack = `
+${stringsOutput}
+${files.map((f) => f.path).join("\n")}
+`.toLowerCase();
+  const vendors = [
+    ["TP-Link", /\btp[-_ ]?link\b/i],
+    ["Netgear", /\bnetgear\b/i],
+    ["D-Link", /\bd[-_ ]?link\b/i],
+    ["ASUS", /\basus\b/i],
+    ["Linksys", /\blinksys\b/i],
+    ["Belkin", /\bbelkin\b/i],
+    ["Zyxel", /\bzyxel\b/i],
+    ["Ubiquiti", /\bubiquiti\b/i],
+    ["MikroTik", /\bmikrotik\b/i],
+    ["Huawei", /\bhuawei\b/i],
+    ["Hikvision", /\bhikvision\b/i],
+    ["Dahua", /\bdahua\b/i],
+    ["Xiaomi", /\bxiaomi\b/i],
+    ["Realtek", /\brealtek\b/i],
+    ["Broadcom", /\bbroadcom\b/i],
+    ["MediaTek", /\bmediatek\b/i],
+    ["Qualcomm", /\bqualcomm\b/i],
+    ["Marvell", /\bmarvell\b/i],
+    ["Samsung", /\bsamsung\b/i],
+    ["Synology", /\bsynology\b/i],
+    ["QNAP", /\bqnap\b/i]
+  ];
+  for (const [vendor, pattern] of vendors) {
+    if (pattern.test(haystack)) {
+      return vendor;
+    }
+  }
+  return null;
+}
+function detectVersion(stringsOutput) {
+  const patterns = [
+    /\bfirmware[\s_-]?(?:version|ver|v)?\s*[:=]?\s*v?(\d+(?:\.\d+){1,4}(?:[-_.][A-Za-z0-9]+)*)/i,
+    /\bversion\s*[:=]\s*v?(\d+(?:\.\d+){1,4}(?:[-_.][A-Za-z0-9]+)*)/i,
+    /\bver(?:sion)?\s*[:=]\s*v?(\d+(?:\.\d+){1,4}(?:[-_.][A-Za-z0-9]+)*)/i,
+    /\bv(\d+\.\d+(?:\.\d+){0,3})\b/i,
+    /\bFW[_ -]?V?(\d+\.\d+(?:\.\d+){0,3})\b/i
+  ];
+  for (const pattern of patterns) {
+    const match = stringsOutput.match(pattern);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+  return null;
 }
 function detectComponents(files, stringsOutput) {
   const found = /* @__PURE__ */ new Set();
@@ -75494,10 +75760,16 @@ function detectComponents(files, stringsOutput) {
     "uboot"
   ];
   for (const p of patterns) {
-    if (haystack.includes(p)) found.add(p);
+    if (haystack.includes(p)) {
+      found.add(p);
+    }
   }
-  const versionMatch = stringsOutput.match(/OpenSSL\s+[\d.]+[a-z]?/gi);
-  if (versionMatch) found.add(versionMatch[0]);
+  const versionMatch = stringsOutput.match(
+    /OpenSSL\s+[\d.]+[a-z]?/gi
+  );
+  if (versionMatch) {
+    versionMatch.forEach((v) => found.add(v));
+  }
   return [...found];
 }
 async function extractFirmware(firmwarePath, extractPath) {
@@ -75505,44 +75777,81 @@ async function extractFirmware(firmwarePath, extractPath) {
   const hasBinwalk = await commandExists("binwalk");
   if (hasBinwalk) {
     try {
-      await runCommand("binwalk", ["-e", "-C", extractPath, "--run-as=root", firmwarePath], {
-        timeoutMs: 3e5
-      });
+      await runCommand(
+        "binwalk",
+        ["-e", "-C", extractPath, "--run-as=root", firmwarePath],
+        { timeoutMs: 3e5 }
+      );
     } catch {
     }
   }
   const rawCopy = path2.join(extractPath, "firmware.bin");
-  const { copyFile, readFile: readFile4 } = await import("node:fs/promises");
+  const { copyFile } = await import("node:fs/promises");
   await copyFile(firmwarePath, rawCopy);
   await extractGzipChunks(firmwarePath, extractPath);
   let stringsOutput = "";
   if (await commandExists("strings")) {
     try {
-      const { stdout } = await runCommand("strings", ["-a", firmwarePath], { timeoutMs: 6e4 });
+      const { stdout } = await runCommand(
+        "strings",
+        ["-a", firmwarePath],
+        { timeoutMs: 6e4 }
+      );
       stringsOutput = stdout;
-      await writeFile(path2.join(extractPath, "_strings_dump.txt"), stringsOutput);
+      await writeFile(
+        path2.join(extractPath, "_strings_dump.txt"),
+        stringsOutput
+      );
     } catch {
       stringsOutput = "";
     }
   }
   const files = [];
   await walkDir(extractPath, extractPath, files);
-  const buf = await readFile4(firmwarePath);
-  const architecture = detectArchitectureFromBuffer(buf);
+  let architecture = await detectArchitectureFromFiles(
+    extractPath,
+    files
+  );
+  if (architecture === "UNKNOWN") {
+    const firmwareBuffer = await readFile(firmwarePath);
+    architecture = detectArchitectureFromBuffer(firmwareBuffer);
+  }
+  const vendor = detectVendor(stringsOutput, files);
+  const version3 = detectVersion(stringsOutput);
   const components = detectComponents(files, stringsOutput);
-  return { extractPath, files, architecture, components };
+  console.log("[Firmware Detection]");
+  console.log("Architecture:", architecture);
+  console.log("Vendor:", vendor ?? "Unknown");
+  console.log("Version:", version3 ?? "Unknown");
+  return {
+    extractPath,
+    files,
+    architecture,
+    vendor,
+    version: version3,
+    components
+  };
 }
 var IOT_BINARIES;
 var init_extraction = __esm({
   "src/services/extraction.ts"() {
     "use strict";
     init_shell();
-    IOT_BINARIES = ["busybox", "httpd", "telnetd", "dropbear", "udhcpc", "dnsmasq", "lighttpd", "boa"];
+    IOT_BINARIES = [
+      "busybox",
+      "httpd",
+      "telnetd",
+      "dropbear",
+      "udhcpc",
+      "dnsmasq",
+      "lighttpd",
+      "boa"
+    ];
   }
 });
 
 // src/services/static-analyzer.ts
-import { readFile } from "node:fs/promises";
+import { readFile as readFile2 } from "node:fs/promises";
 import path3 from "node:path";
 function redactValue(value) {
   if (value.length <= 8) return "****";
@@ -75555,7 +75864,7 @@ function isTextFile(filePath) {
 async function scanFileContent(filePath, relPath, secrets, dangerous, vulns) {
   let content;
   try {
-    const buf = await readFile(filePath);
+    const buf = await readFile2(filePath);
     if (buf.includes(0)) return;
     content = buf.toString("utf8");
   } catch {
@@ -75771,7 +76080,7 @@ var init_cve = __esm({
 
 // src/services/malware-analyzer.ts
 import { createHash as createHash2 } from "node:crypto";
-import { readFile as readFile2 } from "node:fs/promises";
+import { readFile as readFile3 } from "node:fs/promises";
 import path4 from "node:path";
 function computeEntropy(buf) {
   const freq = new Array(256).fill(0);
@@ -75826,7 +76135,7 @@ async function queryVirusTotal(sha256) {
   }
 }
 async function analyzeFileHash(filePath, fileName) {
-  const buf = await readFile2(filePath);
+  const buf = await readFile3(filePath);
   const sha256 = createHash2("sha256").update(buf).digest("hex");
   const vt = await queryVirusTotal(sha256);
   if (vt) {
@@ -75888,7 +76197,7 @@ var init_malware_analyzer = __esm({
 
 // src/services/emulation.ts
 import path5 from "node:path";
-import { readFile as readFile3 } from "node:fs/promises";
+import { readFile as readFile4 } from "node:fs/promises";
 async function runEmulation(firmwarePath, extractPath, architecture) {
   const logs = [`[EMU] Architecture detected: ${architecture}`];
   const services = /* @__PURE__ */ new Set();
@@ -75896,7 +76205,7 @@ async function runEmulation(firmwarePath, extractPath, architecture) {
   const stringsPath = path5.join(extractPath, "_strings_dump.txt");
   let stringsContent = "";
   try {
-    stringsContent = await readFile3(stringsPath, "utf8");
+    stringsContent = await readFile4(stringsPath, "utf8");
   } catch {
     try {
       if (await commandExists("strings")) {
@@ -76289,6 +76598,13 @@ function fallbackReport(ctx) {
   };
 }
 async function generateAiReport(ctx) {
+  if (!ai) {
+    logger.info(
+      { firmware: ctx.firmwareName },
+      "GEMINI_API_KEY absent \u2014 using local fallback report."
+    );
+    return fallbackReport(ctx);
+  }
   const prompt = buildPrompt(ctx);
   const MAX_RETRIES = 2;
   let lastError;
@@ -76385,13 +76701,11 @@ var init_gemini = __esm({
     init_logger2();
     GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY) {
-      throw new Error(
-        "GEMINI_API_KEY is not configured. Please add it to your .env file."
+      logger.warn(
+        "GEMINI_API_KEY is not set. AI report generation will use the local fallback analyser."
       );
     }
-    ai = new GoogleGenAI({
-      apiKey: GEMINI_API_KEY
-    });
+    ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
     GEMINI_MODEL = "gemini-flash-latest";
     REQUEST_TIMEOUT = 12e4;
   }
@@ -76600,109 +76914,196 @@ var init_sbom_generator = __esm({
 
 // src/services/scan-pipeline.ts
 function computeRiskLevel(vulnCount, criticalCount, malwareCount) {
-  if (criticalCount > 0 || malwareCount > 0) return "critical";
-  if (vulnCount > 5) return "high";
-  if (vulnCount > 0) return "medium";
+  if (criticalCount > 0 || malwareCount > 0) {
+    return "critical";
+  }
+  if (vulnCount > 5) {
+    return "high";
+  }
+  if (vulnCount > 0) {
+    return "medium";
+  }
   return "low";
 }
 async function runScanPipeline(firmwareId, scanId) {
   const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, firmwareId));
   if (!fw?.filePath) {
-    await db.update(scanResultsTable).set({ status: "failed", progress: 100 }).where(eq(scanResultsTable.id, scanId));
-    await db.update(firmwareTable).set({ status: "failed" }).where(eq(firmwareTable.id, firmwareId));
+    await db.update(scanResultsTable).set({
+      status: "failed",
+      progress: 100
+    }).where(eq(scanResultsTable.id, scanId));
+    await db.update(firmwareTable).set({
+      status: "failed"
+    }).where(eq(firmwareTable.id, firmwareId));
     return;
   }
   try {
-    await db.update(scanResultsTable).set({ progress: 10 }).where(eq(scanResultsTable.id, scanId));
+    await db.update(scanResultsTable).set({
+      progress: 10
+    }).where(eq(scanResultsTable.id, scanId));
     const extractPath = fw.extractPath ?? firmwareExtractPath(firmwareId);
-    const extraction = await extractFirmware(fw.filePath, extractPath);
+    const extraction = await extractFirmware(
+      fw.filePath,
+      extractPath
+    );
+    const architecture = extraction.architecture;
+    const vendor = extraction.vendor;
+    const version3 = extraction.version;
+    logger.info(
+      {
+        firmwareId,
+        architecture,
+        vendor,
+        version: version3
+      },
+      "Firmware metadata detected"
+    );
+    console.log("");
+    console.log("========================================");
+    console.log("       FIRMWARE DETECTION");
+    console.log("========================================");
+    console.log("Architecture :", architecture);
+    console.log("Vendor       :", vendor ?? "UNKNOWN");
+    console.log("Version      :", version3 ?? "UNKNOWN");
+    console.log("Components   :", extraction.components);
+    console.log("========================================");
+    console.log("");
     await db.update(firmwareTable).set({
       extractPath,
-      architecture: extraction.architecture
+      architecture,
+      vendor,
+      version: version3
     }).where(eq(firmwareTable.id, firmwareId));
-    await db.update(scanResultsTable).set({ progress: 30 }).where(eq(scanResultsTable.id, scanId));
+    await db.update(scanResultsTable).set({
+      progress: 30
+    }).where(eq(scanResultsTable.id, scanId));
     if (extraction.files.length > 0) {
       await db.insert(extractedFilesTable).values(
-        extraction.files.map((f) => ({ firmwareId, ...f }))
+        extraction.files.map((file2) => ({
+          firmwareId,
+          ...file2
+        }))
       );
     }
     const staticAnalysis = await analyzeStaticFiles(
       extractPath,
-      extraction.files.map((f) => f.path)
+      extraction.files.map((file2) => file2.path)
     );
-    await db.update(scanResultsTable).set({ progress: 50 }).where(eq(scanResultsTable.id, scanId));
+    await db.update(scanResultsTable).set({
+      progress: 50
+    }).where(eq(scanResultsTable.id, scanId));
     if (staticAnalysis.secrets.length > 0) {
       await db.insert(hardcodedSecretsTable).values(
-        staticAnalysis.secrets.map((s) => ({ firmwareId, ...s }))
+        staticAnalysis.secrets.map((secret) => ({
+          firmwareId,
+          ...secret
+        }))
       );
     }
     if (staticAnalysis.dangerous.length > 0) {
       await db.insert(dangerousFunctionsTable).values(
-        staticAnalysis.dangerous.map((d) => ({ firmwareId, ...d }))
+        staticAnalysis.dangerous.map((dangerous) => ({
+          firmwareId,
+          ...dangerous
+        }))
       );
     }
     if (staticAnalysis.vulnerabilities.length > 0) {
       await db.insert(vulnerabilitiesTable).values(
-        staticAnalysis.vulnerabilities.map((v) => ({ firmwareId, ...v }))
-      );
-    }
-    const cveMatches = await matchCvesForComponents(extraction.components);
-    if (cveMatches.length > 0) {
-      await db.insert(cveMatchesTable).values(
-        cveMatches.map((c) => ({ firmwareId, ...c }))
-      );
-    }
-    await db.update(scanResultsTable).set({ progress: 70 }).where(eq(scanResultsTable.id, scanId));
-    const malwareResults = await scanExtractedBinaries(extractPath, extraction.files);
-    if (malwareResults.length > 0) {
-      await db.insert(malwareHashesTable).values(
-        malwareResults.map((m) => ({
+        staticAnalysis.vulnerabilities.map((vulnerability) => ({
           firmwareId,
-          sha256: m.sha256,
-          threatScore: m.threatScore,
-          virusTotalResult: m.virusTotalResult,
-          isMalicious: m.isMalicious,
-          detectionCount: m.detectionCount,
-          totalEngines: m.totalEngines,
-          fileName: m.fileName
+          ...vulnerability
         }))
       );
     }
-    const emulation = await runEmulation(fw.filePath, extractPath, extraction.architecture);
+    const cveMatches = await matchCvesForComponents(
+      extraction.components
+    );
+    if (cveMatches.length > 0) {
+      await db.insert(cveMatchesTable).values(
+        cveMatches.map((cve) => ({
+          firmwareId,
+          ...cve
+        }))
+      );
+    }
+    await db.update(scanResultsTable).set({
+      progress: 70
+    }).where(eq(scanResultsTable.id, scanId));
+    const malwareResults = await scanExtractedBinaries(
+      extractPath,
+      extraction.files
+    );
+    if (malwareResults.length > 0) {
+      await db.insert(malwareHashesTable).values(
+        malwareResults.map((malware) => ({
+          firmwareId,
+          sha256: malware.sha256,
+          threatScore: malware.threatScore,
+          virusTotalResult: malware.virusTotalResult,
+          isMalicious: malware.isMalicious,
+          detectionCount: malware.detectionCount,
+          totalEngines: malware.totalEngines,
+          fileName: malware.fileName
+        }))
+      );
+    }
+    const emulation = await runEmulation(
+      fw.filePath,
+      extractPath,
+      architecture
+    );
     await db.insert(emulationLogsTable).values({
       firmwareId,
       status: "running",
       architecture: emulation.architecture,
-      runningServices: JSON.stringify(emulation.runningServices),
-      openPorts: JSON.stringify(emulation.openPorts),
+      runningServices: JSON.stringify(
+        emulation.runningServices
+      ),
+      openPorts: JSON.stringify(
+        emulation.openPorts
+      ),
       runtimeLogs: emulation.runtimeLogs
     });
-    await db.update(scanResultsTable).set({ progress: 85 }).where(eq(scanResultsTable.id, scanId));
-    await generateSbomReport(firmwareId, extractPath);
+    await db.update(scanResultsTable).set({
+      progress: 85
+    }).where(eq(scanResultsTable.id, scanId));
+    await generateSbomReport(
+      firmwareId,
+      extractPath
+    );
     const aiReport = await generateAiReport({
       firmwareName: fw.name,
-      architecture: extraction.architecture,
-      vulnerabilities: staticAnalysis.vulnerabilities.map((v) => ({
-        type: v.type,
-        severity: v.severity,
-        description: v.description,
-        file: v.affectedFile
-      })),
-      secrets: staticAnalysis.secrets.map((s) => ({
-        type: s.type,
-        file: s.file,
-        severity: s.severity
-      })),
-      dangerousFunctions: staticAnalysis.dangerous.map((d) => ({
-        name: d.name,
-        file: d.file,
-        risk: d.risk
-      })),
-      cveIds: cveMatches.map((c) => c.cveId),
-      malwareFindings: malwareResults.map((m) => ({
-        fileName: m.fileName,
-        threatScore: m.threatScore,
-        result: m.virusTotalResult
+      architecture,
+      vulnerabilities: staticAnalysis.vulnerabilities.map(
+        (vulnerability) => ({
+          type: vulnerability.type,
+          severity: vulnerability.severity,
+          description: vulnerability.description,
+          file: vulnerability.affectedFile
+        })
+      ),
+      secrets: staticAnalysis.secrets.map(
+        (secret) => ({
+          type: secret.type,
+          file: secret.file,
+          severity: secret.severity
+        })
+      ),
+      dangerousFunctions: staticAnalysis.dangerous.map(
+        (dangerous) => ({
+          name: dangerous.name,
+          file: dangerous.file,
+          risk: dangerous.risk
+        })
+      ),
+      cveIds: cveMatches.map(
+        (cve) => cve.cveId
+      ),
+      malwareFindings: malwareResults.map((malware) => ({
+        fileName: malware.fileName,
+        threatScore: malware.threatScore,
+        result: malware.virusTotalResult
       })),
       components: extraction.components
     });
@@ -76710,36 +77111,57 @@ async function runScanPipeline(firmwareId, scanId) {
       firmwareId,
       summary: aiReport.summary,
       riskLevel: aiReport.riskLevel,
-      keyFindings: JSON.stringify(aiReport.keyFindings),
-      recommendations: JSON.stringify(aiReport.recommendations),
+      keyFindings: JSON.stringify(
+        aiReport.keyFindings
+      ),
+      recommendations: JSON.stringify(
+        aiReport.recommendations
+      ),
       exploitProbability: aiReport.exploitProbability
     }).onConflictDoUpdate({
       target: aiReportsTable.firmwareId,
       set: {
         summary: aiReport.summary,
         riskLevel: aiReport.riskLevel,
-        keyFindings: JSON.stringify(aiReport.keyFindings),
-        recommendations: JSON.stringify(aiReport.recommendations),
+        keyFindings: JSON.stringify(
+          aiReport.keyFindings
+        ),
+        recommendations: JSON.stringify(
+          aiReport.recommendations
+        ),
         exploitProbability: aiReport.exploitProbability,
         generatedAt: /* @__PURE__ */ new Date()
       }
     });
-    const allVulns = staticAnalysis.vulnerabilities;
-    const criticalCount = allVulns.filter((v) => v.severity === "critical").length;
-    const malwareCount = malwareResults.filter((m) => m.isMalicious).length;
-    const riskLevel = computeRiskLevel(allVulns.length, criticalCount, malwareCount);
+    const allVulnerabilities = staticAnalysis.vulnerabilities;
+    const criticalCount = allVulnerabilities.filter(
+      (vulnerability) => vulnerability.severity === "critical"
+    ).length;
+    const malwareCount = malwareResults.filter(
+      (malware) => malware.isMalicious
+    ).length;
+    const riskLevel = computeRiskLevel(
+      allVulnerabilities.length,
+      criticalCount,
+      malwareCount
+    );
     await db.update(scanResultsTable).set({
       status: "completed",
       progress: 100,
       completedAt: /* @__PURE__ */ new Date(),
       totalFiles: extraction.files.length,
-      vulnerabilitiesFound: allVulns.length,
+      vulnerabilitiesFound: allVulnerabilities.length,
       riskLevel
     }).where(eq(scanResultsTable.id, scanId));
-    await db.update(firmwareTable).set({ status: "completed" }).where(eq(firmwareTable.id, firmwareId));
+    await db.update(firmwareTable).set({
+      status: "completed",
+      architecture,
+      vendor,
+      version: version3
+    }).where(eq(firmwareTable.id, firmwareId));
     await db.insert(activityTable).values({
       type: "scan_completed",
-      message: `Scan completed: ${allVulns.length} vulnerabilities, ${cveMatches.length} CVEs, risk ${riskLevel.toUpperCase()}`,
+      message: `Scan completed: ${allVulnerabilities.length} vulnerabilities, ${cveMatches.length} CVEs, risk ${riskLevel.toUpperCase()}`,
       severity: riskLevel === "critical" ? "critical" : riskLevel === "high" ? "high" : "info",
       firmwareId,
       firmwareName: fw.name
@@ -76753,10 +77175,34 @@ async function runScanPipeline(firmwareId, scanId) {
         firmwareName: fw.name
       });
     }
+    console.log("");
+    console.log("========================================");
+    console.log("           SCAN COMPLETED");
+    console.log("========================================");
+    console.log("Firmware     :", fw.name);
+    console.log("Architecture :", architecture);
+    console.log("Vendor       :", vendor ?? "UNKNOWN");
+    console.log("Version      :", version3 ?? "UNKNOWN");
+    console.log("Vulnerabilities:", allVulnerabilities.length);
+    console.log("CVEs         :", cveMatches.length);
+    console.log("Risk         :", riskLevel.toUpperCase());
+    console.log("========================================");
+    console.log("");
   } catch (err) {
-    logger.error({ err, firmwareId }, "Scan pipeline failed");
-    await db.update(scanResultsTable).set({ status: "failed", progress: 100 }).where(eq(scanResultsTable.id, scanId));
-    await db.update(firmwareTable).set({ status: "failed" }).where(eq(firmwareTable.id, firmwareId));
+    logger.error(
+      {
+        err,
+        firmwareId
+      },
+      "Scan pipeline failed"
+    );
+    await db.update(scanResultsTable).set({
+      status: "failed",
+      progress: 100
+    }).where(eq(scanResultsTable.id, scanId));
+    await db.update(firmwareTable).set({
+      status: "failed"
+    }).where(eq(firmwareTable.id, firmwareId));
     await db.insert(activityTable).values({
       type: "scan_completed",
       message: `Scan failed for firmware ID ${firmwareId}`,
@@ -77516,8 +77962,21 @@ var init_reports = __esm({
     });
     router9.get("/reports/history", async (_req, res) => {
       const scans = await db.select().from(scanResultsTable).orderBy(desc(scanResultsTable.startedAt)).limit(20);
+      const allHashes = await db.select().from(malwareHashesTable);
+      const hashScoreByFirmware = /* @__PURE__ */ new Map();
+      const hashGrouped = /* @__PURE__ */ new Map();
+      for (const h of allHashes) {
+        const existing = hashGrouped.get(h.firmwareId) ?? [];
+        existing.push(h);
+        hashGrouped.set(h.firmwareId, existing);
+      }
+      for (const [fwId, hashes] of hashGrouped.entries()) {
+        const avg = hashes.reduce((s, h) => s + h.threatScore, 0) / hashes.length;
+        hashScoreByFirmware.set(fwId, Math.round(avg));
+      }
       const history = await Promise.all(scans.map(async (s) => {
         const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, s.firmwareId));
+        const threatScore = hashScoreByFirmware.get(s.firmwareId) ?? (s.riskLevel === "critical" ? 75 : s.riskLevel === "high" ? 50 : s.riskLevel === "medium" ? 25 : 5);
         return {
           id: s.id,
           firmwareId: s.firmwareId,
@@ -77526,7 +77985,7 @@ var init_reports = __esm({
           status: s.status,
           riskLevel: s.riskLevel || "low",
           vulnerabilitiesFound: s.vulnerabilitiesFound || 0,
-          threatScore: s.riskLevel === "critical" ? 87 : s.riskLevel === "high" ? 62 : s.riskLevel === "medium" ? 38 : 15
+          threatScore
         };
       }));
       res.json(history);
@@ -77591,17 +78050,32 @@ var init_dashboard = __esm({
       res.json({ critical, high, medium, low, total: vulns.length });
     });
     router10.get("/dashboard/threat-trend", async (_req, res) => {
+      const allScans = await db.select().from(scanResultsTable);
+      function riskToScore(riskLevel, vulnCount) {
+        const base = riskLevel === "critical" ? 80 : riskLevel === "high" ? 55 : riskLevel === "medium" ? 35 : 10;
+        const bonus = Math.min(20, Math.floor((vulnCount ?? 0) * 2));
+        return Math.min(100, base + bonus);
+      }
+      const scansByDate = /* @__PURE__ */ new Map();
+      for (const s of allScans) {
+        const dateStr = s.startedAt.toISOString().split("T")[0];
+        const existing = scansByDate.get(dateStr) ?? [];
+        existing.push(s);
+        scansByDate.set(dateStr, existing);
+      }
       const trend = [];
       const now = /* @__PURE__ */ new Date();
       for (let i = 13; i >= 0; i--) {
         const date6 = new Date(now);
         date6.setDate(date6.getDate() - i);
         const dateStr = date6.toISOString().split("T")[0];
-        trend.push({
-          date: dateStr,
-          score: Math.floor(30 + Math.random() * 60),
-          firmwareCount: Math.floor(Math.random() * 3)
-        });
+        const dayScans = scansByDate.get(dateStr) ?? [];
+        let dayScore = 0;
+        if (dayScans.length > 0) {
+          const totalScore = dayScans.reduce((sum, s) => sum + riskToScore(s.riskLevel, s.vulnerabilitiesFound), 0);
+          dayScore = Math.round(totalScore / dayScans.length);
+        }
+        trend.push({ date: dateStr, score: dayScore, firmwareCount: dayScans.length });
       }
       res.json(trend);
     });

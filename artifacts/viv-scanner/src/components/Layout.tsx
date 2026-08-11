@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Shield, Activity, HardDrive, Search, ShieldAlert, Bug, Fingerprint, Zap, FileText, LogOut } from "lucide-react";
+import { Shield, Activity, HardDrive, LogOut } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -9,13 +9,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const links = [
     { href: "/", label: "Dashboard", icon: Activity },
     { href: "/firmware", label: "Firmware Library", icon: HardDrive },
-    // Mock firmwareId for demo navigation
-    { href: "/scan/1", label: "Scan Details", icon: Search },
-    { href: "/security/1", label: "Security Analysis", icon: ShieldAlert },
-    { href: "/cve/1", label: "CVE Intelligence", icon: Bug },
-    { href: "/malware/1", label: "Malware Detection", icon: Fingerprint },
-    { href: "/emulation/1", label: "QEMU Emulation", icon: Zap },
-    { href: "/reports/1", label: "Reports & AI", icon: FileText },
   ];
 
   return (
