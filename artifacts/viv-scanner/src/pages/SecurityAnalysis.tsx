@@ -1,5 +1,6 @@
 import { useParams, Link } from "wouter";
 import { 
+  useGetFirmware, getGetFirmwareQueryKey,
   useGetSecurityScore, getGetSecurityScoreQueryKey,
   useGetHardcodedSecrets, getGetHardcodedSecretsQueryKey,
   useGetDangerousFunctions, getGetDangerousFunctionsQueryKey,
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShieldAlert, AlertTriangle, Key, Code, ChevronLeft, Shield } from "lucide-react";
+import { ShieldAlert, AlertTriangle, Key, Code, ChevronLeft, Shield, Cpu, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis, Cell } from "recharts";
@@ -17,6 +18,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 export default function SecurityAnalysis() {
   const params = useParams();
   const firmwareId = parseInt(params.firmwareId || "0", 10);
+
+  const { data: firmware, isLoading: loadingFw } = useGetFirmware(firmwareId, {
+    query: { enabled: !!firmwareId, queryKey: getGetFirmwareQueryKey(firmwareId) }
+  });
 
   const { data: score, isLoading: loadingScore } = useGetSecurityScore(firmwareId, {
     query: { enabled: !!firmwareId, queryKey: getGetSecurityScoreQueryKey(firmwareId) }
@@ -84,6 +89,39 @@ export default function SecurityAnalysis() {
           SECURITY_ANALYSIS
         </motion.h1>
       </div>
+
+      <Card className="border-border bg-card/80 backdrop-blur-md shadow-lg">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="space-y-1">
+              <p className="text-xs font-mono text-muted-foreground uppercase">Firmware</p>
+              <p className="font-mono text-sm truncate">
+                {loadingFw ? <Skeleton className="h-4 w-32" /> : firmware?.name || 'Unknown'}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-mono text-muted-foreground uppercase">Architecture</p>
+              <p className="font-mono text-sm flex items-center">
+                <Cpu className="w-3 h-3 mr-1 text-primary" />
+                {loadingFw ? <Skeleton className="h-4 w-16" /> : firmware?.architecture || 'Unknown'}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-mono text-muted-foreground uppercase">Vendor</p>
+              <p className="font-mono text-sm flex items-center">
+                <Building2 className="w-3 h-3 mr-1 text-primary" />
+                {loadingFw ? <Skeleton className="h-4 w-20" /> : firmware?.vendor || 'Unknown'}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-mono text-muted-foreground uppercase">Status</p>
+              <p className="font-mono text-sm">
+                {loadingFw ? <Skeleton className="h-4 w-20" /> : (firmware?.status?.toUpperCase() || 'UNKNOWN')}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid md:grid-cols-3 gap-6">
         <Card className="border-border bg-card/80 backdrop-blur-md shadow-lg">

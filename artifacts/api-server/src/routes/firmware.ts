@@ -5,7 +5,8 @@ import { unlink } from "node:fs/promises";
 import multer from "multer";
 import { db, firmwareTable, activityTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { ensureDataDirs, firmwareUploadPath } from "../lib/paths.js";
+import { ensureDataDirs, firmwareUploadPath, firmwareExtractPath } from "../lib/paths.js";
+import { extractFirmware } from "../services/extraction.js";
 
 const router: IRouter = Router();
 
@@ -183,10 +184,28 @@ router.post(
         destPath,
       );
 
+      const extractPath = firmwareExtractPath(fw.id);
+      let architecture = "UNKNOWN";
+      let vendor: string | null = null;
+      let version: string | null = null;
+
+      try {
+        const extraction = await extractFirmware(destPath, extractPath);
+        architecture = extraction.architecture;
+        vendor = extraction.vendor;
+        version = extraction.version;
+      } catch (err) {
+        console.error("[Firmware Metadata Detection Error]", err);
+      }
+
       await db
         .update(firmwareTable)
         .set({
           filePath: destPath,
+          extractPath,
+          architecture,
+          vendor,
+          version,
         })
         .where(eq(firmwareTable.id, fw.id));
 
@@ -208,6 +227,9 @@ router.post(
           toFirmwareResponse({
             ...fw,
             filePath: destPath,
+            architecture,
+            vendor,
+            version,
           }),
         );
     } catch (err) {

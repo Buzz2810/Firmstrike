@@ -180,6 +180,7 @@ export default function FirmwareLibrary() {
                     <TableRow className="border-border/50">
                       <TableHead className="font-mono text-xs uppercase text-muted-foreground">ID / Name</TableHead>
                       <TableHead className="font-mono text-xs uppercase text-muted-foreground">Arch</TableHead>
+                      <TableHead className="font-mono text-xs uppercase text-muted-foreground">Vendor</TableHead>
                       <TableHead className="font-mono text-xs uppercase text-muted-foreground">Size</TableHead>
                       <TableHead className="font-mono text-xs uppercase text-muted-foreground">Status</TableHead>
                       <TableHead className="font-mono text-xs uppercase text-muted-foreground text-right">Actions</TableHead>
@@ -203,6 +204,9 @@ export default function FirmwareLibrary() {
                             <Cpu className="w-3 h-3 mr-1 text-muted-foreground" />
                             {fw.architecture}
                           </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground">
+                          {fw.vendor || "Unknown"}
                         </TableCell>
                         <TableCell className="font-mono text-xs text-muted-foreground">
                           {(fw.fileSize / 1024 / 1024).toFixed(2)} MB

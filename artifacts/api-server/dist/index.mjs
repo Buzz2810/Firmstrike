@@ -28310,7 +28310,7 @@ var require_pino = __commonJS({
     function pinoBundlerAbsolutePath(p) {
       try {
         const path10 = __require("path");
-        const outputDir = "C:\\Users\\kamte\\Documents\\Final_project\\FirmStrike\\artifacts\\api-server\\dist";
+        const outputDir = "D:\\Desktop\\FirmStrike_Final\\FirmStrike_Final\\artifacts\\api-server\\dist";
         return path10.resolve(outputDir, p.replace(/^\.\//, ""));
       } catch (e) {
         const f = new Function("p", "return new URL(p, import.meta.url).pathname");
@@ -75328,226 +75328,6 @@ var init_paths = __esm({
   }
 });
 
-// src/routes/firmware.ts
-import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { unlink } from "node:fs/promises";
-function toFirmwareResponse(f) {
-  return {
-    id: f.id,
-    name: f.name,
-    uploadedAt: f.uploadedAt.toISOString(),
-    architecture: f.architecture,
-    hashValue: f.hashValue,
-    status: f.status,
-    fileSize: f.fileSize,
-    vendor: f.vendor ?? null,
-    version: f.version ?? null
-  };
-}
-var import_express3, import_multer, router3, upload, firmware_default;
-var init_firmware3 = __esm({
-  "src/routes/firmware.ts"() {
-    "use strict";
-    import_express3 = __toESM(require_express2(), 1);
-    import_multer = __toESM(require_multer(), 1);
-    init_src2();
-    init_drizzle_orm();
-    init_paths();
-    router3 = (0, import_express3.Router)();
-    upload = (0, import_multer.default)({
-      dest: "/tmp/viv-uploads",
-      limits: {
-        fileSize: 2 * 1024 * 1024 * 1024
-        // 2 GB
-      }
-    });
-    router3.get("/firmware", async (_req, res) => {
-      const all = await db.select().from(firmwareTable).orderBy(firmwareTable.uploadedAt);
-      res.json(all.map(toFirmwareResponse));
-    });
-    router3.post("/firmware", async (req, res) => {
-      const {
-        name,
-        hashValue,
-        fileSize,
-        architecture,
-        vendor,
-        version: version3
-      } = req.body;
-      if (!name || !hashValue || !fileSize) {
-        res.status(400).json({
-          error: "Missing required fields"
-        });
-        return;
-      }
-      const [fw] = await db.insert(firmwareTable).values({
-        name,
-        hashValue,
-        fileSize,
-        architecture: architecture || "UNKNOWN",
-        vendor: vendor || null,
-        version: version3 || null,
-        status: "pending"
-      }).returning();
-      await db.insert(activityTable).values({
-        type: "scan_started",
-        message: `Firmware "${fw.name}" uploaded and queued for analysis`,
-        severity: "info",
-        firmwareId: fw.id,
-        firmwareName: fw.name
-      });
-      res.status(201).json(toFirmwareResponse(fw));
-    });
-    router3.post(
-      "/firmware/upload",
-      upload.single("file"),
-      async (req, res) => {
-        if (!req.file) {
-          res.status(400).json({
-            error: "No firmware file provided"
-          });
-          return;
-        }
-        try {
-          await ensureDataDirs();
-          const hash = createHash("sha256");
-          await new Promise((resolve, reject) => {
-            const stream = createReadStream(req.file.path);
-            stream.on("data", (chunk) => {
-              hash.update(chunk);
-            });
-            stream.on("end", resolve);
-            stream.on("error", reject);
-          });
-          const hashValue = hash.digest("hex");
-          const originalName = req.file.originalname || `firmware_${Date.now()}.bin`;
-          const [fw] = await db.insert(firmwareTable).values({
-            name: originalName,
-            hashValue,
-            fileSize: req.file.size,
-            architecture: "UNKNOWN",
-            vendor: null,
-            version: null,
-            status: "pending"
-          }).returning();
-          const destPath = firmwareUploadPath(
-            fw.id,
-            originalName
-          );
-          const { rename } = await import("node:fs/promises");
-          await rename(
-            req.file.path,
-            destPath
-          );
-          await db.update(firmwareTable).set({
-            filePath: destPath
-          }).where(eq(firmwareTable.id, fw.id));
-          await db.insert(activityTable).values({
-            type: "scan_started",
-            message: `Firmware "${originalName}" uploaded (${(req.file.size / 1024 / 1024).toFixed(1)} MB)`,
-            severity: "info",
-            firmwareId: fw.id,
-            firmwareName: originalName
-          });
-          res.status(201).json(
-            toFirmwareResponse({
-              ...fw,
-              filePath: destPath
-            })
-          );
-        } catch (err) {
-          console.error(
-            "[Firmware Upload Error]",
-            err
-          );
-          try {
-            if (req.file?.path) {
-              await unlink(req.file.path);
-            }
-          } catch {
-          }
-          res.status(500).json({
-            error: "Firmware upload failed"
-          });
-        }
-      }
-    );
-    router3.get(
-      "/firmware/:id",
-      async (req, res) => {
-        const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-        const id = parseInt(raw, 10);
-        if (isNaN(id)) {
-          res.status(400).json({
-            error: "Invalid id"
-          });
-          return;
-        }
-        const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
-        if (!fw) {
-          res.status(404).json({
-            error: "Firmware not found"
-          });
-          return;
-        }
-        res.json(toFirmwareResponse(fw));
-      }
-    );
-    router3.delete(
-      "/firmware/:id",
-      async (req, res) => {
-        const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-        const id = parseInt(raw, 10);
-        if (isNaN(id)) {
-          res.status(400).json({
-            error: "Invalid id"
-          });
-          return;
-        }
-        const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
-        if (fw?.filePath) {
-          try {
-            await unlink(fw.filePath);
-          } catch {
-          }
-        }
-        await db.delete(firmwareTable).where(eq(firmwareTable.id, id));
-        res.sendStatus(204);
-      }
-    );
-    firmware_default = router3;
-  }
-});
-
-// src/lib/logger.ts
-var logger_exports = {};
-__export(logger_exports, {
-  logger: () => logger
-});
-var import_pino, isProduction, logger;
-var init_logger2 = __esm({
-  "src/lib/logger.ts"() {
-    "use strict";
-    import_pino = __toESM(require_pino(), 1);
-    isProduction = process.env.NODE_ENV === "production";
-    logger = (0, import_pino.default)({
-      level: process.env.LOG_LEVEL ?? "info",
-      redact: [
-        "req.headers.authorization",
-        "req.headers.cookie",
-        "res.headers['set-cookie']"
-      ],
-      ...isProduction ? {} : {
-        transport: {
-          target: "pino-pretty",
-          options: { colorize: true }
-        }
-      }
-    });
-  }
-});
-
 // src/services/shell.ts
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -75689,33 +75469,73 @@ async function detectArchitectureFromFiles(extractPath, files) {
   }
   return "UNKNOWN";
 }
-function detectVendor(stringsOutput, files) {
+function detectArchitectureFromFilename(fileName) {
+  const normalized = fileName.toLowerCase();
+  const patterns = [
+    [/\b(?:x86[_-]?64|amd64|x64)\b/, "x86_64"],
+    [/\b(?:x86|i386|i686)\b/, "x86"],
+    [/\b(?:mips(?:el|64el)?|mips64|mipsel)\b/, "MIPS"],
+    [/\b(?:arm64|aarch64|armv8|armv8l)\b/, "ARM64"],
+    [/\b(?:armv7|armv6|armv5|armv4|arm)\b/, "ARM"],
+    [/\b(?:powerpc|ppc64|ppc)\b/, "PowerPC"],
+    [/\b(?:risc[-_ ]?v|riscv64|riscv)\b/, "RISC-V"],
+    [/\b(?:superh|sh4|sh3)\b/, "SuperH"]
+  ];
+  for (const [pattern, arch] of patterns) {
+    if (pattern.test(normalized)) {
+      return arch;
+    }
+  }
+  return null;
+}
+function detectArchitectureFromStrings(stringsOutput) {
+  const haystack = stringsOutput.toLowerCase();
+  const patterns = [
+    [/\b(?:x86[_-]?64|amd64|x64)\b/, "x86_64"],
+    [/\b(?:x86|i386|i686)\b/, "x86"],
+    [/\b(?:mips(?:el|64el)?|mips64|mipsel)\b/, "MIPS"],
+    [/\b(?:arm64|aarch64|armv8|armv8l)\b/, "ARM64"],
+    [/\b(?:armv7|armv6|armv5|armv4|arm)\b/, "ARM"],
+    [/\b(?:powerpc|ppc64|ppc)\b/, "PowerPC"],
+    [/\b(?:risc[-_ ]?v|riscv64|riscv)\b/, "RISC-V"],
+    [/\b(?:superh|sh4|sh3)\b/, "SuperH"]
+  ];
+  for (const [pattern, arch] of patterns) {
+    if (pattern.test(haystack)) {
+      return arch;
+    }
+  }
+  return null;
+}
+function detectVendor(stringsOutput, files, firmwarePath) {
   const haystack = `
 ${stringsOutput}
+${firmwarePath}
 ${files.map((f) => f.path).join("\n")}
 `.toLowerCase();
   const vendors = [
-    ["TP-Link", /\btp[-_ ]?link\b/i],
-    ["Netgear", /\bnetgear\b/i],
-    ["D-Link", /\bd[-_ ]?link\b/i],
-    ["ASUS", /\basus\b/i],
-    ["Linksys", /\blinksys\b/i],
-    ["Belkin", /\bbelkin\b/i],
-    ["Zyxel", /\bzyxel\b/i],
-    ["Ubiquiti", /\bubiquiti\b/i],
-    ["MikroTik", /\bmikrotik\b/i],
-    ["Huawei", /\bhuawei\b/i],
-    ["Hikvision", /\bhikvision\b/i],
-    ["Dahua", /\bdahua\b/i],
-    ["Xiaomi", /\bxiaomi\b/i],
-    ["Realtek", /\brealtek\b/i],
-    ["Broadcom", /\bbroadcom\b/i],
-    ["MediaTek", /\bmediatek\b/i],
-    ["Qualcomm", /\bqualcomm\b/i],
-    ["Marvell", /\bmarvell\b/i],
-    ["Samsung", /\bsamsung\b/i],
-    ["Synology", /\bsynology\b/i],
-    ["QNAP", /\bqnap\b/i]
+    ["OpenWrt", /\bopenwrt\b/],
+    ["TP-Link", /\btp[-_ ]?link\b/],
+    ["Netgear", /\bnetgear\b/],
+    ["D-Link", /\bd[-_ ]?link\b/],
+    ["ASUS", /\basus\b/],
+    ["Linksys", /\blinksys\b/],
+    ["Belkin", /\bbelkin\b/],
+    ["Zyxel", /\bzyxel\b/],
+    ["Ubiquiti", /\bubiquiti\b/],
+    ["MikroTik", /\bmikrotik\b/],
+    ["Huawei", /\bhuawei\b/],
+    ["Hikvision", /\bhikvision\b/],
+    ["Dahua", /\bdahua\b/],
+    ["Xiaomi", /\bxiaomi\b/],
+    ["Realtek", /\brealtek\b/],
+    ["Broadcom", /\bbroadcom\b/],
+    ["MediaTek", /\bmediatek\b/],
+    ["Qualcomm", /\bqualcomm\b/],
+    ["Marvell", /\bmarvell\b/],
+    ["Samsung", /\bsamsung\b/],
+    ["Synology", /\bsynology\b/],
+    ["QNAP", /\bqnap\b/]
   ];
   for (const [vendor, pattern] of vendors) {
     if (pattern.test(haystack)) {
@@ -75812,11 +75632,23 @@ async function extractFirmware(firmwarePath, extractPath) {
     extractPath,
     files
   );
+  const filenameArchitecture = detectArchitectureFromFilename(
+    path2.basename(firmwarePath)
+  );
+  if (architecture === "UNKNOWN") {
+    const stringArchitecture = detectArchitectureFromStrings(stringsOutput);
+    if (stringArchitecture) {
+      architecture = stringArchitecture;
+    }
+  }
+  if (architecture === "UNKNOWN" && filenameArchitecture) {
+    architecture = filenameArchitecture;
+  }
   if (architecture === "UNKNOWN") {
     const firmwareBuffer = await readFile(firmwarePath);
     architecture = detectArchitectureFromBuffer(firmwareBuffer);
   }
-  const vendor = detectVendor(stringsOutput, files);
+  const vendor = detectVendor(stringsOutput, files, firmwarePath) || null;
   const version3 = detectVersion(stringsOutput);
   const components = detectComponents(files, stringsOutput);
   console.log("[Firmware Detection]");
@@ -75847,6 +75679,246 @@ var init_extraction = __esm({
       "lighttpd",
       "boa"
     ];
+  }
+});
+
+// src/routes/firmware.ts
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { unlink } from "node:fs/promises";
+function toFirmwareResponse(f) {
+  return {
+    id: f.id,
+    name: f.name,
+    uploadedAt: f.uploadedAt.toISOString(),
+    architecture: f.architecture,
+    hashValue: f.hashValue,
+    status: f.status,
+    fileSize: f.fileSize,
+    vendor: f.vendor ?? null,
+    version: f.version ?? null
+  };
+}
+var import_express3, import_multer, router3, upload, firmware_default;
+var init_firmware3 = __esm({
+  "src/routes/firmware.ts"() {
+    "use strict";
+    import_express3 = __toESM(require_express2(), 1);
+    import_multer = __toESM(require_multer(), 1);
+    init_src2();
+    init_drizzle_orm();
+    init_paths();
+    init_extraction();
+    router3 = (0, import_express3.Router)();
+    upload = (0, import_multer.default)({
+      dest: "/tmp/viv-uploads",
+      limits: {
+        fileSize: 2 * 1024 * 1024 * 1024
+        // 2 GB
+      }
+    });
+    router3.get("/firmware", async (_req, res) => {
+      const all = await db.select().from(firmwareTable).orderBy(firmwareTable.uploadedAt);
+      res.json(all.map(toFirmwareResponse));
+    });
+    router3.post("/firmware", async (req, res) => {
+      const {
+        name,
+        hashValue,
+        fileSize,
+        architecture,
+        vendor,
+        version: version3
+      } = req.body;
+      if (!name || !hashValue || !fileSize) {
+        res.status(400).json({
+          error: "Missing required fields"
+        });
+        return;
+      }
+      const [fw] = await db.insert(firmwareTable).values({
+        name,
+        hashValue,
+        fileSize,
+        architecture: architecture || "UNKNOWN",
+        vendor: vendor || null,
+        version: version3 || null,
+        status: "pending"
+      }).returning();
+      await db.insert(activityTable).values({
+        type: "scan_started",
+        message: `Firmware "${fw.name}" uploaded and queued for analysis`,
+        severity: "info",
+        firmwareId: fw.id,
+        firmwareName: fw.name
+      });
+      res.status(201).json(toFirmwareResponse(fw));
+    });
+    router3.post(
+      "/firmware/upload",
+      upload.single("file"),
+      async (req, res) => {
+        if (!req.file) {
+          res.status(400).json({
+            error: "No firmware file provided"
+          });
+          return;
+        }
+        try {
+          await ensureDataDirs();
+          const hash = createHash("sha256");
+          await new Promise((resolve, reject) => {
+            const stream = createReadStream(req.file.path);
+            stream.on("data", (chunk) => {
+              hash.update(chunk);
+            });
+            stream.on("end", resolve);
+            stream.on("error", reject);
+          });
+          const hashValue = hash.digest("hex");
+          const originalName = req.file.originalname || `firmware_${Date.now()}.bin`;
+          const [fw] = await db.insert(firmwareTable).values({
+            name: originalName,
+            hashValue,
+            fileSize: req.file.size,
+            architecture: "UNKNOWN",
+            vendor: null,
+            version: null,
+            status: "pending"
+          }).returning();
+          const destPath = firmwareUploadPath(
+            fw.id,
+            originalName
+          );
+          const { rename } = await import("node:fs/promises");
+          await rename(
+            req.file.path,
+            destPath
+          );
+          const extractPath = firmwareExtractPath(fw.id);
+          let architecture = "UNKNOWN";
+          let vendor = null;
+          let version3 = null;
+          try {
+            const extraction = await extractFirmware(destPath, extractPath);
+            architecture = extraction.architecture;
+            vendor = extraction.vendor;
+            version3 = extraction.version;
+          } catch (err) {
+            console.error("[Firmware Metadata Detection Error]", err);
+          }
+          await db.update(firmwareTable).set({
+            filePath: destPath,
+            extractPath,
+            architecture,
+            vendor,
+            version: version3
+          }).where(eq(firmwareTable.id, fw.id));
+          await db.insert(activityTable).values({
+            type: "scan_started",
+            message: `Firmware "${originalName}" uploaded (${(req.file.size / 1024 / 1024).toFixed(1)} MB)`,
+            severity: "info",
+            firmwareId: fw.id,
+            firmwareName: originalName
+          });
+          res.status(201).json(
+            toFirmwareResponse({
+              ...fw,
+              filePath: destPath,
+              architecture,
+              vendor,
+              version: version3
+            })
+          );
+        } catch (err) {
+          console.error(
+            "[Firmware Upload Error]",
+            err
+          );
+          try {
+            if (req.file?.path) {
+              await unlink(req.file.path);
+            }
+          } catch {
+          }
+          res.status(500).json({
+            error: "Firmware upload failed"
+          });
+        }
+      }
+    );
+    router3.get(
+      "/firmware/:id",
+      async (req, res) => {
+        const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = parseInt(raw, 10);
+        if (isNaN(id)) {
+          res.status(400).json({
+            error: "Invalid id"
+          });
+          return;
+        }
+        const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
+        if (!fw) {
+          res.status(404).json({
+            error: "Firmware not found"
+          });
+          return;
+        }
+        res.json(toFirmwareResponse(fw));
+      }
+    );
+    router3.delete(
+      "/firmware/:id",
+      async (req, res) => {
+        const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = parseInt(raw, 10);
+        if (isNaN(id)) {
+          res.status(400).json({
+            error: "Invalid id"
+          });
+          return;
+        }
+        const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, id));
+        if (fw?.filePath) {
+          try {
+            await unlink(fw.filePath);
+          } catch {
+          }
+        }
+        await db.delete(firmwareTable).where(eq(firmwareTable.id, id));
+        res.sendStatus(204);
+      }
+    );
+    firmware_default = router3;
+  }
+});
+
+// src/lib/logger.ts
+var logger_exports = {};
+__export(logger_exports, {
+  logger: () => logger
+});
+var import_pino, isProduction, logger;
+var init_logger2 = __esm({
+  "src/lib/logger.ts"() {
+    "use strict";
+    import_pino = __toESM(require_pino(), 1);
+    isProduction = process.env.NODE_ENV === "production";
+    logger = (0, import_pino.default)({
+      level: process.env.LOG_LEVEL ?? "info",
+      redact: [
+        "req.headers.authorization",
+        "req.headers.cookie",
+        "res.headers['set-cookie']"
+      ],
+      ...isProduction ? {} : {
+        transport: {
+          target: "pino-pretty",
+          options: { colorize: true }
+        }
+      }
+    });
   }
 });
 

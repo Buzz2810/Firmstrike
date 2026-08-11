@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { 
   useGetFirmware, getGetFirmwareQueryKey,
@@ -13,12 +14,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, ChevronLeft, File, Folder, HardDrive, ShieldAlert, Cpu, Hash, Clock, Bug, Fingerprint, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 
 const POLL_INTERVAL_MS = 3000;
 
 export default function ScanDetails() {
   const params = useParams();
   const firmwareId = parseInt(params.firmwareId || "0", 10);
+
+  const queryClient = useQueryClient();
 
   const { data: firmware, isLoading: loadingFw } = useGetFirmware(firmwareId, {
     query: { enabled: !!firmwareId, queryKey: getGetFirmwareQueryKey(firmwareId) }
@@ -47,6 +51,13 @@ export default function ScanDetails() {
   const isRunning = latestScan?.status === "running";
   const isCompleted = latestScan?.status === "completed";
   const isFailed = latestScan?.status === "failed";
+
+  useEffect(() => {
+    if (!firmwareId) return;
+    if (latestScan?.status === "completed" || latestScan?.status === "failed") {
+      queryClient.invalidateQueries({ queryKey: getGetFirmwareQueryKey(firmwareId) });
+    }
+  }, [firmwareId, latestScan?.status, queryClient]);
 
   const subPages = [
     { href: `/security/${firmwareId}`, label: "Security Analysis",  icon: ShieldAlert, color: "text-orange-500 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20" },

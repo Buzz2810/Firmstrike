@@ -198,37 +198,86 @@ async function detectArchitectureFromFiles(
   return "UNKNOWN";
 }
 
+function detectArchitectureFromFilename(fileName: string): string | null {
+  const normalized = fileName.toLowerCase();
+
+  const patterns: Array<[RegExp, string]> = [
+    [/\b(?:x86[_-]?64|amd64|x64)\b/, "x86_64"],
+    [/\b(?:x86|i386|i686)\b/, "x86"],
+    [/\b(?:mips(?:el|64el)?|mips64|mipsel)\b/, "MIPS"],
+    [/\b(?:arm64|aarch64|armv8|armv8l)\b/, "ARM64"],
+    [/\b(?:armv7|armv6|armv5|armv4|arm)\b/, "ARM"],
+    [/\b(?:powerpc|ppc64|ppc)\b/, "PowerPC"],
+    [/\b(?:risc[-_ ]?v|riscv64|riscv)\b/, "RISC-V"],
+    [/\b(?:superh|sh4|sh3)\b/, "SuperH"],
+  ];
+
+  for (const [pattern, arch] of patterns) {
+    if (pattern.test(normalized)) {
+      return arch;
+    }
+  }
+
+  return null;
+}
+
+function detectArchitectureFromStrings(stringsOutput: string): string | null {
+  const haystack = stringsOutput.toLowerCase();
+
+  const patterns: Array<[RegExp, string]> = [
+    [/\b(?:x86[_-]?64|amd64|x64)\b/, "x86_64"],
+    [/\b(?:x86|i386|i686)\b/, "x86"],
+    [/\b(?:mips(?:el|64el)?|mips64|mipsel)\b/, "MIPS"],
+    [/\b(?:arm64|aarch64|armv8|armv8l)\b/, "ARM64"],
+    [/\b(?:armv7|armv6|armv5|armv4|arm)\b/, "ARM"],
+    [/\b(?:powerpc|ppc64|ppc)\b/, "PowerPC"],
+    [/\b(?:risc[-_ ]?v|riscv64|riscv)\b/, "RISC-V"],
+    [/\b(?:superh|sh4|sh3)\b/, "SuperH"],
+  ];
+
+  for (const [pattern, arch] of patterns) {
+    if (pattern.test(haystack)) {
+      return arch;
+    }
+  }
+
+  return null;
+}
+
 function detectVendor(
   stringsOutput: string,
   files: ExtractedFileInfo[],
+  firmwarePath: string,
 ): string | null {
   const haystack = `
 ${stringsOutput}
+${firmwarePath}
 ${files.map((f) => f.path).join("\n")}
 `.toLowerCase();
 
   const vendors: Array<[string, RegExp]> = [
-    ["TP-Link", /\btp[-_ ]?link\b/i],
-    ["Netgear", /\bnetgear\b/i],
-    ["D-Link", /\bd[-_ ]?link\b/i],
-    ["ASUS", /\basus\b/i],
-    ["Linksys", /\blinksys\b/i],
-    ["Belkin", /\bbelkin\b/i],
-    ["Zyxel", /\bzyxel\b/i],
-    ["Ubiquiti", /\bubiquiti\b/i],
-    ["MikroTik", /\bmikrotik\b/i],
-    ["Huawei", /\bhuawei\b/i],
-    ["Hikvision", /\bhikvision\b/i],
-    ["Dahua", /\bdahua\b/i],
-    ["Xiaomi", /\bxiaomi\b/i],
-    ["Realtek", /\brealtek\b/i],
-    ["Broadcom", /\bbroadcom\b/i],
-    ["MediaTek", /\bmediatek\b/i],
-    ["Qualcomm", /\bqualcomm\b/i],
-    ["Marvell", /\bmarvell\b/i],
-    ["Samsung", /\bsamsung\b/i],
-    ["Synology", /\bsynology\b/i],
-    ["QNAP", /\bqnap\b/i],
+    ["OpenWrt", /\bopenwrt\b/],
+    ["TP-Link", /\btp[-_ ]?link\b/],
+    ["Netgear", /\bnetgear\b/],
+    ["D-Link", /\bd[-_ ]?link\b/],
+    ["ASUS", /\basus\b/],
+    ["Linksys", /\blinksys\b/],
+    ["Belkin", /\bbelkin\b/],
+    ["Zyxel", /\bzyxel\b/],
+    ["Ubiquiti", /\bubiquiti\b/],
+    ["MikroTik", /\bmikrotik\b/],
+    ["Huawei", /\bhuawei\b/],
+    ["Hikvision", /\bhikvision\b/],
+    ["Dahua", /\bdahua\b/],
+    ["Xiaomi", /\bxiaomi\b/],
+    ["Realtek", /\brealtek\b/],
+    ["Broadcom", /\bbroadcom\b/],
+    ["MediaTek", /\bmediatek\b/],
+    ["Qualcomm", /\bqualcomm\b/],
+    ["Marvell", /\bmarvell\b/],
+    ["Samsung", /\bsamsung\b/],
+    ["Synology", /\bsynology\b/],
+    ["QNAP", /\bqnap\b/],
   ];
 
   for (const [vendor, pattern] of vendors) {
@@ -359,12 +408,29 @@ export async function extractFirmware(
     files,
   );
 
+  const filenameArchitecture = detectArchitectureFromFilename(
+    path.basename(firmwarePath),
+  );
+
+  if (architecture === "UNKNOWN") {
+    const stringArchitecture = detectArchitectureFromStrings(stringsOutput);
+    if (stringArchitecture) {
+      architecture = stringArchitecture;
+    }
+  }
+
+  if (architecture === "UNKNOWN" && filenameArchitecture) {
+    architecture = filenameArchitecture;
+  }
+
   if (architecture === "UNKNOWN") {
     const firmwareBuffer = await readFile(firmwarePath);
     architecture = detectArchitectureFromBuffer(firmwareBuffer);
   }
 
-  const vendor = detectVendor(stringsOutput, files);
+  const vendor =
+    detectVendor(stringsOutput, files, firmwarePath) ||
+    null;
   const version = detectVersion(stringsOutput);
   const components = detectComponents(files, stringsOutput);
 

@@ -357,6 +357,10 @@ export default function FirmwareLibrary() {
                       </TableHead>
 
                       <TableHead className="font-mono text-xs uppercase text-muted-foreground">
+                        Vendor
+                      </TableHead>
+
+                      <TableHead className="font-mono text-xs uppercase text-muted-foreground">
                         Size
                       </TableHead>
 
@@ -398,6 +402,10 @@ export default function FirmwareLibrary() {
                                 <Cpu className="w-3 h-3 mr-1 text-muted-foreground" />
                                 {fw.architecture}
                               </div>
+                            </TableCell>
+
+                            <TableCell className="font-mono text-xs">
+                              {fw.vendor || "Unknown"}
                             </TableCell>
 
                             <TableCell className="font-mono text-xs text-muted-foreground">
