@@ -1,7 +1,20 @@
-﻿import { mkdir, readdir, stat, writeFile, readFile } from "node:fs/promises";
-import path from "node:path";
-import { commandExists, runCommand } from "./shell.js";
+﻿import {
+  mkdir,
+  readdir,
+  stat,
+  writeFile,
+  readFile,
+  copyFile,
+} from "node:fs/promises";
 
+import path from "node:path";
+
+import { unzipSync } from "fflate";
+
+import {
+  commandExists,
+  runCommand,
+} from "./shell.js";
 export type ExtractedFileInfo = {
   path: string;
   type: string;
@@ -45,8 +58,9 @@ async function walkDir(
 
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
-    const rel = path.relative(root, full).replace(/\\/g, "/");
-
+    const rel = path
+  .relative(root, full)
+  .replace(/\\/g, "/");
     if (entry.isDirectory()) {
       if (entry.name === ".git") continue;
       await walkDir(full, root, files);
@@ -123,7 +137,7 @@ async function extractGzipChunks(
 
         count++;
       } catch {
-        // Invalid gzip at this offset.
+        
       }
     }
   }
@@ -131,71 +145,75 @@ async function extractGzipChunks(
   return count;
 }
 
-function detectArchitectureFromBuffer(buf: Buffer): string {
-  if (buf.length < 20) return "UNKNOWN";
-
-  if (
-    buf[0] !== 0x7f ||
-    buf[1] !== 0x45 ||
-    buf[2] !== 0x4c ||
-    buf[3] !== 0x46
-  ) {
-    return "UNKNOWN";
-  }
-
-  const littleEndian = buf[5] === 1;
-
-  const machine = littleEndian
-    ? buf.readUInt16LE(18)
-    : buf.readUInt16BE(18);
-
+function architectureFromElfMachine(
+  machine: number,
+): string {
   switch (machine) {
     case 3:
       return "x86";
+
     case 8:
       return "MIPS";
+
     case 20:
       return "PowerPC";
+
     case 21:
       return "PowerPC64";
+
     case 40:
       return "ARM";
+
     case 42:
       return "SuperH";
+
     case 62:
       return "x86_64";
+
     case 183:
       return "ARM64";
+
     case 243:
       return "RISC-V";
+
     default:
       return `ELF (${machine})`;
   }
 }
 
-async function detectArchitectureFromFiles(
-  extractPath: string,
-  files: ExtractedFileInfo[],
-): Promise<string> {
-  for (const file of files) {
-    try {
-      const fullPath = path.join(
-        extractPath,
-        file.path.replace(/^\/+/, ""),
-      );
-
-      const buf = await readFile(fullPath);
-      const architecture = detectArchitectureFromBuffer(buf);
-
-      if (architecture !== "UNKNOWN") {
-        return architecture;
-      }
-    } catch {
-      // Ignore unreadable files.
-    }
+function detectElfArchitecture(
+  buf: Buffer,
+  offset = 0,
+): string | null {
+  if (offset + 20 > buf.length) {
+    return null;
   }
 
-  return "UNKNOWN";
+  if (
+    buf[offset] !== 0x7f ||
+    buf[offset + 1] !== 0x45 ||
+    buf[offset + 2] !== 0x4c ||
+    buf[offset + 3] !== 0x46
+  ) {
+    return null;
+  }
+
+  const elfClass = buf[offset + 4];
+  const endian = buf[offset + 5];
+
+  if (
+    (elfClass !== 1 && elfClass !== 2) ||
+    (endian !== 1 && endian !== 2)
+  ) {
+    return null;
+  }
+
+  const machine =
+    endian === 1
+      ? buf.readUInt16LE(offset + 18)
+      : buf.readUInt16BE(offset + 18);
+
+  return architectureFromElfMachine(machine);
 }
 
 function detectArchitectureFromFilename(fileName: string): string | null {
@@ -243,46 +261,229 @@ function detectArchitectureFromStrings(stringsOutput: string): string | null {
 
   return null;
 }
+async function detectArchitectureFromFiles(
+  extractPath: string,
+  files: ExtractedFileInfo[],
+): Promise<string> {
+  for (const file of files) {
+    const fullPath = path.join(
+      extractPath,
+      file.path.replace(/^[/\\]/, ""),
+    );
 
+    try {
+      const buf = await readFile(fullPath);
+
+      const architecture =
+        detectElfArchitecture(buf) ??
+        detectEmbeddedElfArchitecture(buf) ??
+        detectUImageArchitecture(buf) ??
+        detectPeArchitecture(buf);
+
+      if (architecture) {
+        return architecture;
+      }
+    } catch {
+      // Ignore files that cannot be read.
+    }
+  }
+
+  return "UNKNOWN";
+}
 function detectVendor(
   stringsOutput: string,
   files: ExtractedFileInfo[],
   firmwarePath: string,
 ): string | null {
+  const fileName =
+    path.basename(firmwarePath).toLowerCase();
+
+  const filePaths = files
+    .map((f) => f.path)
+    .join("\n")
+    .toLowerCase();
+
   const haystack = `
 ${stringsOutput}
-${firmwarePath}
-${files.map((f) => f.path).join("\n")}
+${fileName}
+${filePaths}
 `.toLowerCase();
 
-  const vendors: Array<[string, RegExp]> = [
-    ["OpenWrt", /\bopenwrt\b/],
-    ["TP-Link", /\btp[-_ ]?link\b/],
-    ["Netgear", /\bnetgear\b/],
-    ["D-Link", /\bd[-_ ]?link\b/],
-    ["ASUS", /\basus\b/],
-    ["Linksys", /\blinksys\b/],
-    ["Belkin", /\bbelkin\b/],
-    ["Zyxel", /\bzyxel\b/],
-    ["Ubiquiti", /\bubiquiti\b/],
-    ["MikroTik", /\bmikrotik\b/],
-    ["Huawei", /\bhuawei\b/],
-    ["Hikvision", /\bhikvision\b/],
-    ["Dahua", /\bdahua\b/],
-    ["Xiaomi", /\bxiaomi\b/],
-    ["Realtek", /\brealtek\b/],
-    ["Broadcom", /\bbroadcom\b/],
-    ["MediaTek", /\bmediatek\b/],
-    ["Qualcomm", /\bqualcomm\b/],
-    ["Marvell", /\bmarvell\b/],
-    ["Samsung", /\bsamsung\b/],
-    ["Synology", /\bsynology\b/],
-    ["QNAP", /\bqnap\b/],
+  const vendorRules: Array<{
+    vendor: string;
+    patterns: RegExp[];
+  }> = [
+    {
+      vendor: "TP-Link",
+      patterns: [
+        /\btp[-_ ]?link\b/i,
+        /\barcher[-_ ]?[a-z0-9-]+\b/i,
+        /\btl-(?:wr|mr|er|sg|sf|r)[a-z0-9-]*\b/i,
+        /\bomada\b/i,
+      ],
+    },
+
+    {
+      vendor: "D-Link",
+      patterns: [
+        /\bd[-_ ]?link\b/i,
+        /\bdir[-_ ]?[a-z0-9-]+\b/i,
+        /\bdsl[-_ ]?[a-z0-9-]+\b/i,
+      ],
+    },
+
+    {
+      vendor: "Netgear",
+      patterns: [
+        /\bnetgear\b/i,
+        /\bnighthawk\b/i,
+        /\br\d{3,4}\b/i,
+      ],
+    },
+
+    {
+      vendor: "ASUS",
+      patterns: [
+        /\basustek\b/i,
+        /\basus\b/i,
+        /\brog[-_ ]?router\b/i,
+      ],
+    },
+
+    {
+      vendor: "Linksys",
+      patterns: [
+        /\blinksys\b/i,
+        /\bvelop\b/i,
+      ],
+    },
+
+    {
+      vendor: "Ubiquiti",
+      patterns: [
+        /\bubiquiti\b/i,
+        /\bunifi\b/i,
+        /\bedgerouter\b/i,
+      ],
+    },
+
+    {
+      vendor: "MikroTik",
+      patterns: [
+        /\bmikrotik\b/i,
+        /\brouteros\b/i,
+      ],
+    },
+
+    {
+      vendor: "Zyxel",
+      patterns: [
+        /\bzyxel\b/i,
+      ],
+    },
+
+    {
+      vendor: "Huawei",
+      patterns: [
+        /\bhuawei\b/i,
+        /\bhg\d{2,4}\b/i,
+      ],
+    },
+
+    {
+  vendor: "Netgear",
+  patterns: [
+    /\bnetgear\b/i,
+    /\bnighthawk\b/i,
+  ],
+},
+
+    {
+      vendor: "Dahua",
+      patterns: [
+        /\bdahua\b/i,
+      ],
+    },
+
+    {
+      vendor: "Xiaomi",
+      patterns: [
+        /\bxiaomi\b/i,
+        /\bmi[-_ ]?router\b/i,
+      ],
+    },
+
+    {
+      vendor: "Realtek",
+      patterns: [
+        /\brealtek\b/i,
+        /\brtl\d{4,6}\b/i,
+      ],
+    },
+
+    {
+      vendor: "Broadcom",
+      patterns: [
+        /\bbroadcom\b/i,
+        /\bbcm\d+\b/i,
+      ],
+    },
+
+    {
+      vendor: "MediaTek",
+      patterns: [
+        /\bmediatek\b/i,
+        /\bmt\d{4,6}\b/i,
+      ],
+    },
+
+    {
+      vendor: "Qualcomm",
+      patterns: [
+        /\bqualcomm\b/i,
+        /\batheros\b/i,
+        /\bipq\d+\b/i,
+      ],
+    },
+
+    {
+      vendor: "Marvell",
+      patterns: [
+        /\bmarvell\b/i,
+      ],
+    },
+
+    {
+      vendor: "Synology",
+      patterns: [
+        /\bsynology\b/i,
+      ],
+    },
+
+    {
+      vendor: "QNAP",
+      patterns: [
+        /\bqnap\b/i,
+      ],
+    },
+
+    {
+      vendor: "OpenWrt",
+      patterns: [
+        /\bopenwrt\b/i,
+        /\bopenwrt[-_ ]?\d+\.\d+/i,
+      ],
+    },
   ];
 
-  for (const [vendor, pattern] of vendors) {
-    if (pattern.test(haystack)) {
-      return vendor;
+  for (const rule of vendorRules) {
+    if (
+      rule.patterns.some(
+        (pattern) =>
+          pattern.test(haystack),
+      )
+    ) {
+      return rule.vendor;
     }
   }
 
@@ -357,9 +558,35 @@ export async function extractFirmware(
   extractPath: string,
 ): Promise<ExtractionResult> {
   await mkdir(extractPath, { recursive: true });
+const firmwareBuffer =
+  await readFile(firmwarePath);
 
-  const hasBinwalk = await commandExists("binwalk");
+const format =
+  detectFirmwareFormat(
+    firmwareBuffer,
+    path.basename(firmwarePath),
+  );
 
+console.log(
+  "[Firmware Format]:",
+  format,
+);
+
+if (format === "TRX") {
+  await extractTrx(
+    firmwarePath,
+    extractPath,
+  );
+}
+
+if (format === "ZIP") {
+  await extractZip(
+    firmwarePath,
+    extractPath,
+  );
+}                                     
+
+const hasBinwalk = await commandExists("binwalk");
   if (hasBinwalk) {
     try {
       await runCommand(
@@ -373,60 +600,76 @@ export async function extractFirmware(
   }
 
   const rawCopy = path.join(extractPath, "firmware.bin");
-  const { copyFile } = await import("node:fs/promises");
 
   await copyFile(firmwarePath, rawCopy);
   await extractGzipChunks(firmwarePath, extractPath);
 
   let stringsOutput = "";
 
-  if (await commandExists("strings")) {
-    try {
-      const { stdout } = await runCommand(
-        "strings",
-        ["-a", firmwarePath],
-        { timeoutMs: 60_000 },
-      );
+if (await commandExists("strings")) {
+  try {
+    const { stdout } = await runCommand(
+      "strings",
+      ["-a", firmwarePath],
+      { timeoutMs: 60_000 },
+    );
 
-      stringsOutput = stdout;
-
-      await writeFile(
-        path.join(extractPath, "_strings_dump.txt"),
-        stringsOutput,
-      );
-    } catch {
-      stringsOutput = "";
-    }
+    stringsOutput = stdout;
+  } catch {
+    stringsOutput = "";
   }
+}
+
+if (!stringsOutput) {
+  stringsOutput =
+    extractAsciiStrings(firmwareBuffer);
+}
+
+await writeFile(
+  path.join(
+    extractPath,
+    "_strings_dump.txt",
+  ),
+  stringsOutput,
+);
 
   const files: ExtractedFileInfo[] = [];
 
   await walkDir(extractPath, extractPath, files);
+let architecture = await detectArchitectureFromFiles(
+  extractPath,
+  files,
+);
 
-  let architecture = await detectArchitectureFromFiles(
-    extractPath,
-    files,
-  );
-
-  const filenameArchitecture = detectArchitectureFromFilename(
+const filenameArchitecture =
+  detectArchitectureFromFilename(
     path.basename(firmwarePath),
   );
 
-  if (architecture === "UNKNOWN") {
-    const stringArchitecture = detectArchitectureFromStrings(stringsOutput);
-    if (stringArchitecture) {
-      architecture = stringArchitecture;
-    }
-  }
+if (architecture === "UNKNOWN") {
+  architecture =
+    detectArchitectureFromBuffer(
+      firmwareBuffer,
+    );
+}
 
-  if (architecture === "UNKNOWN" && filenameArchitecture) {
-    architecture = filenameArchitecture;
-  }
+if (architecture === "UNKNOWN") {
+  const stringArchitecture =
+    detectArchitectureFromStrings(
+      stringsOutput,
+    );
 
-  if (architecture === "UNKNOWN") {
-    const firmwareBuffer = await readFile(firmwarePath);
-    architecture = detectArchitectureFromBuffer(firmwareBuffer);
+  if (stringArchitecture) {
+    architecture = stringArchitecture;
   }
+}
+
+if (
+  architecture === "UNKNOWN" &&
+  filenameArchitecture
+) {
+  architecture = filenameArchitecture;
+}
 
   const vendor =
     detectVendor(stringsOutput, files, firmwarePath) ||
@@ -447,4 +690,406 @@ export async function extractFirmware(
     version,
     components,
   };
+}
+function detectEmbeddedElfArchitecture(
+  buf: Buffer,
+): string | null {
+  const maxScan = buf.length;
+
+  for (let i = 0; i < maxScan - 20; i++) {
+    if (
+      buf[i] === 0x7f &&
+      buf[i + 1] === 0x45 &&
+      buf[i + 2] === 0x4c &&
+      buf[i + 3] === 0x46
+    ) {
+      const architecture = detectElfArchitecture(
+        buf,
+        i,
+      );
+
+      if (architecture) {
+        return architecture;
+      }
+    }
+  }
+
+  return null;
+}
+function detectUImageArchitecture(
+  buf: Buffer,
+): string | null {
+  const UIMAGE_MAGIC = 0x27051956;
+
+  for (let i = 0; i <= buf.length - 64; i++) {
+    const magic = buf.readUInt32BE(i);
+
+    if (magic !== UIMAGE_MAGIC) {
+      continue;
+    }
+
+    // uImage header:
+    // +0  magic
+    // +4  header CRC
+    // +8  timestamp
+    // +12 data size
+    // +16 load address
+    // +20 entry point
+    // +24 data CRC
+    // +28 operating system
+    // +29 architecture
+    // +30 image type
+    // +31 compression
+
+    const arch = buf[i + 29];
+
+    switch (arch) {
+      case 2:
+        return "ARM";
+
+      case 3:
+        return "x86";
+
+      case 5:
+  return "MIPS";
+
+case 6:
+  return "MIPS64";
+
+      case 7:
+        return "PowerPC";
+
+      case 8:
+        return "S390";
+
+      case 9:
+        return "SuperH";
+
+      case 10:
+        return "SPARC";
+
+      case 22:
+        return "ARM64";
+
+      case 24:
+        return "x86_64";
+    }
+  }
+
+  return null;
+}
+function detectPeArchitecture(
+  buf: Buffer,
+): string | null {
+  for (let i = 0; i <= buf.length - 64; i++) {
+    if (
+      buf[i] !== 0x4d ||
+      buf[i + 1] !== 0x5a
+    ) {
+      continue;
+    }
+
+    const peOffset = buf.readUInt32LE(i + 0x3c);
+
+    if (
+      peOffset < 0 ||
+      i + peOffset + 6 > buf.length
+    ) {
+      continue;
+    }
+
+    const pe = i + peOffset;
+
+    if (
+      buf[pe] !== 0x50 ||
+      buf[pe + 1] !== 0x45 ||
+      buf[pe + 2] !== 0x00 ||
+      buf[pe + 3] !== 0x00
+    ) {
+      continue;
+    }
+
+    const machine = buf.readUInt16LE(pe + 4);
+
+    switch (machine) {
+      case 0x014c:
+        return "x86";
+
+      case 0x8664:
+        return "x86_64";
+
+      case 0xaa64:
+        return "ARM64";
+
+      case 0x01c0:
+        return "ARM";
+
+      case 0x01c4:
+        return "ARM";
+    }
+  }
+
+  return null;
+}
+async function extractTrx(
+  firmwarePath: string,
+  extractPath: string,
+): Promise<number> {
+  const buf = await readFile(firmwarePath);
+
+  if (buf.length < 28) {
+    return 0;
+  }
+
+  const MAGIC = 0x30524448; // "HDR0"
+
+  if (buf.readUInt32LE(0) !== MAGIC) {
+    return 0;
+  }
+
+  const totalLength = buf.readUInt32LE(4);
+  const imageLength =
+  totalLength > 0 &&
+  totalLength <= buf.length
+    ? totalLength
+    : buf.length;
+
+  const offsets = [
+    buf.readUInt32LE(16),
+    buf.readUInt32LE(20),
+    buf.readUInt32LE(24),
+  ]
+    .filter(
+      (offset) =>
+        offset > 0 &&
+        offset < buf.length,
+    )
+    .sort((a, b) => a - b);
+
+  let count = 0;
+
+  for (let i = 0; i < offsets.length; i++) {
+    const start = offsets[i];
+
+    const end =
+  offsets[i + 1] ?? imageLength;
+
+    if (end <= start) {
+      continue;
+    }
+
+    const payload = buf.subarray(
+
+      start,
+      end,
+    );
+
+    await writeFile(
+      path.join(
+        extractPath,
+        `trx-part-${count}.bin`,
+      ),
+      payload,
+    );
+
+    count++;
+  }
+
+  return count;
+}
+
+function detectArchitectureFromBuffer(
+  buf: Buffer,
+): string {
+  return (
+    detectElfArchitecture(buf) ??
+    detectEmbeddedElfArchitecture(buf) ??
+    detectUImageArchitecture(buf) ??
+    detectPeArchitecture(buf) ??
+    "UNKNOWN"
+  );
+}
+async function extractZip(
+  firmwarePath: string,
+  extractPath: string,
+): Promise<number> {
+  const buf = await readFile(firmwarePath);
+
+  // ZIP local file / empty archive / central directory signatures
+  const isZip =
+    buf.length >= 4 &&
+    (
+      buf.subarray(0, 4).equals(
+        Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+      ) ||
+      buf.subarray(0, 4).equals(
+        Buffer.from([0x50, 0x4b, 0x05, 0x06]),
+      ) ||
+      buf.subarray(0, 4).equals(
+        Buffer.from([0x50, 0x4b, 0x07, 0x08]),
+      )
+    );
+
+  if (!isZip) {
+    return 0;
+  }
+
+  const entries = unzipSync(
+    new Uint8Array(buf),
+  );
+
+  let count = 0;
+
+  for (const [entryName, data] of Object.entries(
+    entries,
+  )) {
+    if (!data || data.length === 0) {
+      continue;
+    }
+
+    // Prevent ZIP path traversal.
+    const safeName = entryName
+  .replace(/\\/g, "/")
+  .replace(/^\/+/, "")
+  .split("/")
+  .filter(
+    (part) =>
+      part !== ".." &&
+      part !== ".",
+  )
+  .join("/");
+
+    if (!safeName) {
+      continue;
+    }
+
+    const outputPath = path.join(
+      extractPath,
+      "zip",
+      safeName,
+    );
+
+    await mkdir(
+      path.dirname(outputPath),
+      { recursive: true },
+    );
+    
+    await writeFile(
+      outputPath,
+      Buffer.from(data),
+    );
+
+    count++;
+  }
+
+  return count;
+}
+function detectFirmwareFormat(
+  buf: Buffer,
+  fileName: string,
+): string {
+  const lower = fileName.toLowerCase();
+
+  if (
+  buf.length >= 4 &&
+  (
+    buf.subarray(0, 4).equals(
+      Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+    ) ||
+    buf.subarray(0, 4).equals(
+      Buffer.from([0x50, 0x4b, 0x05, 0x06]),
+    ) ||
+    buf.subarray(0, 4).equals(
+      Buffer.from([0x50, 0x4b, 0x07, 0x08]),
+    )
+  )
+) {
+  return "ZIP";
+}
+
+  if (
+    buf.length >= 4 &&
+    buf.readUInt32LE(0) === 0x30524448
+  ) {
+    return "TRX";
+  }
+
+  if (
+    buf.length >= 4 &&
+    buf.readUInt32BE(0) === 0x27051956
+  ) {
+    return "uImage";
+  }
+
+  if (
+    buf.length >= 4 &&
+    buf.readUInt32LE(0) === 0x73717368
+  ) {
+    return "SquashFS";
+  }
+
+  if (
+    buf.length >= 4 &&
+    buf.readUInt32BE(0) === 0x28cd3d45
+  ) {
+    return "CramFS";
+  }
+
+  if (
+    buf.length >= 4 &&
+    buf.subarray(0, 4).toString("ascii") === "UBI#"
+  ) {
+    return "UBI";
+  }
+
+  if (lower.endsWith(".chk")) {
+    return "CHK";
+  }
+
+  if (lower.endsWith(".img")) {
+    return "Disk/Filesystem Image";
+  }
+
+  if (lower.endsWith(".bin")) {
+    return "Firmware Binary";
+  }
+
+  return "Unknown";
+}
+function extractAsciiStrings(
+  buf: Buffer,
+  minimumLength = 4,
+): string {
+  const result: string[] = [];
+  let current = "";
+
+  for (const byte of buf) {
+    if (
+      byte >= 0x20 &&
+      byte <= 0x7e
+    ) {
+      current += String.fromCharCode(byte);
+
+      if (current.length >= 500) {
+        result.push(current);
+        current = "";
+      }
+    } else {
+      if (
+        current.length >= minimumLength
+      ) {
+        result.push(current);
+      }
+
+      current = "";
+    }
+  }
+
+  if (
+    current.length >= minimumLength
+  ) {
+    result.push(current);
+  }
+
+  return result.join("\n");
 }

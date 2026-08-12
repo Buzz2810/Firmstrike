@@ -6,19 +6,43 @@ const execFileAsync = promisify(execFile);
 export async function runCommand(
   command: string,
   args: string[],
-  options?: { cwd?: string; timeoutMs?: number; maxBuffer?: number },
+  options?: {
+    cwd?: string;
+    timeoutMs?: number;
+    maxBuffer?: number;
+  },
 ): Promise<{ stdout: string; stderr: string }> {
   const { stdout, stderr } = await execFileAsync(command, args, {
     cwd: options?.cwd,
     timeout: options?.timeoutMs ?? 120_000,
     maxBuffer: options?.maxBuffer ?? 20 * 1024 * 1024,
+    windowsHide: true,
   });
-  return { stdout: stdout.toString(), stderr: stderr.toString() };
+
+  return {
+    stdout: stdout.toString(),
+    stderr: stderr.toString(),
+  };
 }
 
-export async function commandExists(command: string): Promise<boolean> {
+export async function commandExists(
+  command: string,
+): Promise<boolean> {
   try {
-    await runCommand("which", [command], { timeoutMs: 5_000 });
+    const checker =
+      process.platform === "win32"
+        ? "where.exe"
+        : "which";
+
+    await execFileAsync(
+      checker,
+      [command],
+      {
+        timeout: 5_000,
+        windowsHide: true,
+      },
+    );
+
     return true;
   } catch {
     return false;

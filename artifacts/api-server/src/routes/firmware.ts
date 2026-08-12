@@ -109,12 +109,6 @@ router.post("/firmware", async (req, res): Promise<void> => {
   res.status(201).json(toFirmwareResponse(fw));
 });
 
-/**
- * POST firmware binary/image
- *
- * Accepts ANY file type.
- * Maximum size: 2 GB.
- */
 router.post(
   "/firmware/upload",
   upload.single("file"),
@@ -129,10 +123,6 @@ router.post(
     try {
       await ensureDataDirs();
 
-      /**
-       * Calculate SHA-256 using a stream.
-       * The complete firmware is NOT loaded into RAM.
-       */
       const hash = createHash("sha256");
 
       await new Promise<void>((resolve, reject) => {
@@ -184,19 +174,41 @@ router.post(
         destPath,
       );
 
-      const extractPath = firmwareExtractPath(fw.id);
-      let architecture = "UNKNOWN";
-      let vendor: string | null = null;
-      let version: string | null = null;
+  const extractPath =
+  firmwareExtractPath(fw.id);
 
-      try {
-        const extraction = await extractFirmware(destPath, extractPath);
-        architecture = extraction.architecture;
-        vendor = extraction.vendor;
-        version = extraction.version;
-      } catch (err) {
-        console.error("[Firmware Metadata Detection Error]", err);
-      }
+await db
+  .update(firmwareTable)
+  .set({
+    filePath: destPath,
+    extractPath,
+  })
+  .where(
+    eq(
+      firmwareTable.id,
+      fw.id,
+    ),
+  );
+  const extractionResult = await extractFirmware(
+  destPath,
+  extractPath,
+);
+
+const {
+  architecture,
+  vendor,
+  version,
+} = extractionResult;
+res.status(201).json(
+  toFirmwareResponse({
+    ...fw,
+    filePath: destPath,
+    extractPath,
+    architecture: "UNKNOWN",
+    vendor: null,
+    version: null,
+  }),
+);
 
       await db
         .update(firmwareTable)
@@ -220,18 +232,18 @@ router.post(
         firmwareId: fw.id,
         firmwareName: originalName,
       });
-
-      res
-        .status(201)
-        .json(
-          toFirmwareResponse({
-            ...fw,
-            filePath: destPath,
-            architecture,
-            vendor,
-            version,
-          }),
-        );
+res
+  .status(201)
+  .json(
+    toFirmwareResponse({
+      ...fw,
+      filePath: destPath,
+      extractPath,
+      architecture,
+      vendor,
+      version,
+    }),
+  );
     } catch (err) {
       console.error(
         "[Firmware Upload Error]",

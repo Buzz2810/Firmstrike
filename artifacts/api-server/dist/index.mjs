@@ -103,9 +103,9 @@ var require_main = __commonJS({
       options.path = vaultPath;
       const result = DotenvModule.configDotenv(options);
       if (!result.parsed) {
-        const err = new Error(`MISSING_DATA: Cannot parse ${vaultPath} for an unknown reason`);
-        err.code = "MISSING_DATA";
-        throw err;
+        const err2 = new Error(`MISSING_DATA: Cannot parse ${vaultPath} for an unknown reason`);
+        err2.code = "MISSING_DATA";
+        throw err2;
       }
       const keys = _dotenvKey(options).split(",");
       const length = keys.length;
@@ -148,30 +148,30 @@ var require_main = __commonJS({
         uri = new URL(dotenvKey);
       } catch (error40) {
         if (error40.code === "ERR_INVALID_URL") {
-          const err = new Error("INVALID_DOTENV_KEY: Wrong format. Must be in valid uri format like dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=development");
-          err.code = "INVALID_DOTENV_KEY";
-          throw err;
+          const err2 = new Error("INVALID_DOTENV_KEY: Wrong format. Must be in valid uri format like dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=development");
+          err2.code = "INVALID_DOTENV_KEY";
+          throw err2;
         }
         throw error40;
       }
       const key = uri.password;
       if (!key) {
-        const err = new Error("INVALID_DOTENV_KEY: Missing key part");
-        err.code = "INVALID_DOTENV_KEY";
-        throw err;
+        const err2 = new Error("INVALID_DOTENV_KEY: Missing key part");
+        err2.code = "INVALID_DOTENV_KEY";
+        throw err2;
       }
       const environment = uri.searchParams.get("environment");
       if (!environment) {
-        const err = new Error("INVALID_DOTENV_KEY: Missing environment part");
-        err.code = "INVALID_DOTENV_KEY";
-        throw err;
+        const err2 = new Error("INVALID_DOTENV_KEY: Missing environment part");
+        err2.code = "INVALID_DOTENV_KEY";
+        throw err2;
       }
       const environmentKey = `DOTENV_VAULT_${environment.toUpperCase()}`;
       const ciphertext = result.parsed[environmentKey];
       if (!ciphertext) {
-        const err = new Error(`NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment ${environmentKey} in your .env.vault file.`);
-        err.code = "NOT_FOUND_DOTENV_ENVIRONMENT";
-        throw err;
+        const err2 = new Error(`NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment ${environmentKey} in your .env.vault file.`);
+        err2.code = "NOT_FOUND_DOTENV_ENVIRONMENT";
+        throw err2;
       }
       return { ciphertext, key };
     }
@@ -303,13 +303,13 @@ var require_main = __commonJS({
         const invalidKeyLength = error40.message === "Invalid key length";
         const decryptionFailed = error40.message === "Unsupported state or unable to authenticate data";
         if (isRange || invalidKeyLength) {
-          const err = new Error("INVALID_DOTENV_KEY: It must be 64 characters long (or more)");
-          err.code = "INVALID_DOTENV_KEY";
-          throw err;
+          const err2 = new Error("INVALID_DOTENV_KEY: It must be 64 characters long (or more)");
+          err2.code = "INVALID_DOTENV_KEY";
+          throw err2;
         } else if (decryptionFailed) {
-          const err = new Error("DECRYPTION_FAILED: Please check your DOTENV_KEY");
-          err.code = "DECRYPTION_FAILED";
-          throw err;
+          const err2 = new Error("DECRYPTION_FAILED: Please check your DOTENV_KEY");
+          err2.code = "DECRYPTION_FAILED";
+          throw err2;
         } else {
           throw error40;
         }
@@ -320,9 +320,9 @@ var require_main = __commonJS({
       const override = Boolean(options && options.override);
       const populated = {};
       if (typeof parsed !== "object") {
-        const err = new Error("OBJECT_REQUIRED: Please check the processEnv argument being passed to populate");
-        err.code = "OBJECT_REQUIRED";
-        throw err;
+        const err2 = new Error("OBJECT_REQUIRED: Please check the processEnv argument being passed to populate");
+        err2.code = "OBJECT_REQUIRED";
+        throw err2;
       }
       for (const key of Object.keys(parsed)) {
         if (Object.prototype.hasOwnProperty.call(processEnv, key)) {
@@ -1143,8 +1143,8 @@ var require_depd = __commonJS({
         msg = callSite === depSite || !callSite.name ? defaultMessage(depSite) : defaultMessage(callSite);
       }
       if (haslisteners) {
-        var err = DeprecationError(this._namespace, msg, stack.slice(i));
-        process.emit("deprecation", err);
+        var err2 = DeprecationError(this._namespace, msg, stack.slice(i));
+        process.emit("deprecation", err2);
         return;
       }
       var format = process.stderr.isTTY ? formatColor : formatPlain;
@@ -1556,7 +1556,7 @@ var require_http_errors = __commonJS({
       return Number(String(status).charAt(0) + "00");
     }
     function createError() {
-      var err;
+      var err2;
       var msg;
       var status = 500;
       var props = {};
@@ -1564,8 +1564,8 @@ var require_http_errors = __commonJS({
         var arg = arguments[i];
         var type = typeof arg;
         if (type === "object" && arg instanceof Error) {
-          err = arg;
-          status = err.status || err.statusCode || status;
+          err2 = arg;
+          status = err2.status || err2.statusCode || status;
         } else if (type === "number" && i === 0) {
           status = arg;
         } else if (type === "string") {
@@ -1583,20 +1583,20 @@ var require_http_errors = __commonJS({
         status = 500;
       }
       var HttpError = createError[status] || createError[codeClass(status)];
-      if (!err) {
-        err = HttpError ? new HttpError(msg) : new Error(msg || statuses.message[status]);
-        Error.captureStackTrace(err, createError);
+      if (!err2) {
+        err2 = HttpError ? new HttpError(msg) : new Error(msg || statuses.message[status]);
+        Error.captureStackTrace(err2, createError);
       }
-      if (!HttpError || !(err instanceof HttpError) || err.status !== status) {
-        err.expose = status < 500;
-        err.status = err.statusCode = status;
+      if (!HttpError || !(err2 instanceof HttpError) || err2.status !== status) {
+        err2.expose = status < 500;
+        err2.status = err2.statusCode = status;
       }
       for (var key in props) {
         if (key !== "status" && key !== "statusCode") {
-          err[key] = props[key];
+          err2[key] = props[key];
         }
       }
-      return err;
+      return err2;
     }
     function createHttpErrorConstructor() {
       function HttpError() {
@@ -1609,22 +1609,22 @@ var require_http_errors = __commonJS({
       var className = toClassName(name);
       function ClientError(message) {
         var msg = message != null ? message : statuses.message[code];
-        var err = new Error(msg);
-        Error.captureStackTrace(err, ClientError);
-        setPrototypeOf(err, ClientError.prototype);
-        Object.defineProperty(err, "message", {
+        var err2 = new Error(msg);
+        Error.captureStackTrace(err2, ClientError);
+        setPrototypeOf(err2, ClientError.prototype);
+        Object.defineProperty(err2, "message", {
           enumerable: true,
           configurable: true,
           value: msg,
           writable: true
         });
-        Object.defineProperty(err, "name", {
+        Object.defineProperty(err2, "name", {
           enumerable: false,
           configurable: true,
           value: className,
           writable: true
         });
-        return err;
+        return err2;
       }
       inherits(ClientError, HttpError);
       nameFunc(ClientError, className);
@@ -1648,22 +1648,22 @@ var require_http_errors = __commonJS({
       var className = toClassName(name);
       function ServerError(message) {
         var msg = message != null ? message : statuses.message[code];
-        var err = new Error(msg);
-        Error.captureStackTrace(err, ServerError);
-        setPrototypeOf(err, ServerError.prototype);
-        Object.defineProperty(err, "message", {
+        var err2 = new Error(msg);
+        Error.captureStackTrace(err2, ServerError);
+        setPrototypeOf(err2, ServerError.prototype);
+        Object.defineProperty(err2, "message", {
           enumerable: true,
           configurable: true,
           value: msg,
           writable: true
         });
-        Object.defineProperty(err, "name", {
+        Object.defineProperty(err2, "name", {
           enumerable: false,
           configurable: true,
           value: className,
           writable: true
         });
-        return err;
+        return err2;
       }
       inherits(ServerError, HttpError);
       nameFunc(ServerError, className);
@@ -5665,8 +5665,8 @@ var require_raw_body = __commonJS({
         return readStream(stream, encoding, length, limit, wrap(done));
       }
       return new Promise(function executor(resolve, reject) {
-        readStream(stream, encoding, length, limit, function onRead(err, buf) {
-          if (err) return reject(err);
+        readStream(stream, encoding, length, limit, function onRead(err2, buf) {
+          if (err2) return reject(err2);
           resolve(buf);
         });
       });
@@ -5703,8 +5703,8 @@ var require_raw_body = __commonJS({
       var decoder;
       try {
         decoder = getDecoder(encoding);
-      } catch (err) {
-        return done(err);
+      } catch (err2) {
+        return done(err2);
       }
       var buffer = decoder ? "" : [];
       stream.on("aborted", onAborted);
@@ -5757,9 +5757,9 @@ var require_raw_body = __commonJS({
           buffer.push(chunk);
         }
       }
-      function onEnd(err) {
+      function onEnd(err2) {
         if (complete) return;
-        if (err) return done(err);
+        if (err2) return done(err2);
         if (length !== null && received !== length) {
           done(createError(400, "request size did not match content length", {
             expected: length,
@@ -5847,11 +5847,11 @@ var require_ee_first = __commonJS({
       return function onevent(arg1) {
         var args = new Array(arguments.length);
         var ee = this;
-        var err = event === "error" ? arg1 : null;
+        var err2 = event === "error" ? arg1 : null;
         for (var i = 0; i < args.length; i++) {
           args[i] = arguments[i];
         }
-        done(err, ee, event, args);
+        done(err2, ee, event, args);
       };
     }
   }
@@ -5921,13 +5921,13 @@ var require_on_finished = __commonJS({
       attached.queue.push(listener);
     }
     function createListener(msg) {
-      function listener(err) {
+      function listener(err2) {
         if (msg.__onFinished === listener) msg.__onFinished = null;
         if (!listener.queue) return;
         var queue = listener.queue;
         listener.queue = null;
         for (var i = 0; i < queue.length; i++) {
-          queue[i](err, msg);
+          queue[i](err2, msg);
         }
       }
       listener.queue = [];
@@ -15727,7 +15727,7 @@ var require_type_is = __commonJS({
     function tryNormalizeType(value) {
       try {
         return value ? normalizeType(value) : null;
-      } catch (err) {
+      } catch (err2) {
         return null;
       }
     }
@@ -15837,8 +15837,8 @@ var require_read = __commonJS({
         stream = contentstream(req, debug, opts.inflate);
         length = stream.length;
         stream.length = void 0;
-      } catch (err) {
-        return next(err);
+      } catch (err2) {
+        return next(err2);
       }
       opts.length = length;
       opts.encoding = verify ? null : encoding;
@@ -15873,10 +15873,10 @@ var require_read = __commonJS({
           try {
             debug("verify body");
             verify(req, res, body, encoding);
-          } catch (err) {
-            next(createError(403, err, {
+          } catch (err2) {
+            next(createError(403, err2, {
               body,
-              type: err.type || "entity.verify.failed"
+              type: err2.type || "entity.verify.failed"
             }));
             return;
           }
@@ -15886,10 +15886,10 @@ var require_read = __commonJS({
           debug("parse body");
           str = typeof body !== "string" && encoding !== null ? iconv.decode(body, encoding) : body;
           req.body = parse3(str, encoding);
-        } catch (err) {
-          next(createError(400, err, {
+        } catch (err2) {
+          next(createError(400, err2, {
             body: str,
-            type: err.type || "entity.parse.failed"
+            type: err2.type || "entity.parse.failed"
           }));
           return;
         }
@@ -16973,7 +16973,7 @@ var require_implementation = __commonJS({
     "use strict";
     var ERROR_MESSAGE = "Function.prototype.bind called on incompatible ";
     var toStr = Object.prototype.toString;
-    var max = Math.max;
+    var max2 = Math.max;
     var funcType = "[object Function]";
     var concatty = function concatty2(a, b) {
       var arr = [];
@@ -17025,7 +17025,7 @@ var require_implementation = __commonJS({
           concatty(args, arguments)
         );
       };
-      var boundLength = max(0, target.length - args.length);
+      var boundLength = max2(0, target.length - args.length);
       var boundArgs = [];
       for (var i = 0; i < boundLength; i++) {
         boundArgs[i] = "$" + i;
@@ -17182,7 +17182,7 @@ var require_get_intrinsic = __commonJS({
     var $URIError = require_uri();
     var abs = require_abs();
     var floor = require_floor();
-    var max = require_max();
+    var max2 = require_max();
     var min = require_min();
     var pow = require_pow();
     var round = require_round();
@@ -17296,7 +17296,7 @@ var require_get_intrinsic = __commonJS({
       "%Object.getPrototypeOf%": $ObjectGPO,
       "%Math.abs%": abs,
       "%Math.floor%": floor,
-      "%Math.max%": max,
+      "%Math.max%": max2,
       "%Math.min%": min,
       "%Math.pow%": pow,
       "%Math.round%": round,
@@ -18640,13 +18640,13 @@ var require_urlencoded = __commonJS({
             parameterLimit,
             strictDepth: true
           });
-        } catch (err) {
-          if (err instanceof RangeError) {
+        } catch (err2) {
+          if (err2 instanceof RangeError) {
             throw createError(400, "The input exceeded the depth", {
               type: "querystring.parse.rangeError"
             });
           } else {
-            throw err;
+            throw err2;
           }
         }
       };
@@ -18884,29 +18884,29 @@ var require_finalhandler = __commonJS({
       var opts = options || {};
       var env = opts.env || process.env.NODE_ENV || "development";
       var onerror = opts.onerror;
-      return function(err) {
+      return function(err2) {
         var headers;
         var msg;
         var status;
-        if (!err && res.headersSent) {
+        if (!err2 && res.headersSent) {
           debug("cannot 404 after headers sent");
           return;
         }
-        if (err) {
-          status = getErrorStatusCode(err);
+        if (err2) {
+          status = getErrorStatusCode(err2);
           if (status === void 0) {
             status = getResponseStatusCode(res);
           } else {
-            headers = getErrorHeaders(err);
+            headers = getErrorHeaders(err2);
           }
-          msg = getErrorMessage(err, status, env);
+          msg = getErrorMessage(err2, status, env);
         } else {
           status = 404;
           msg = "Cannot " + req.method + " " + encodeUrl(getResourceName(req));
         }
         debug("default %s", status);
-        if (err && onerror) {
-          setImmediate(onerror, err, req, res);
+        if (err2 && onerror) {
+          setImmediate(onerror, err2, req, res);
         }
         if (res.headersSent) {
           debug("cannot %d after headers sent", status);
@@ -18918,28 +18918,28 @@ var require_finalhandler = __commonJS({
         send(req, res, status, headers, msg);
       };
     }
-    function getErrorHeaders(err) {
-      if (!err.headers || typeof err.headers !== "object") {
+    function getErrorHeaders(err2) {
+      if (!err2.headers || typeof err2.headers !== "object") {
         return void 0;
       }
-      return { ...err.headers };
+      return { ...err2.headers };
     }
-    function getErrorMessage(err, status, env) {
+    function getErrorMessage(err2, status, env) {
       var msg;
       if (env !== "production") {
-        msg = err.stack;
-        if (!msg && typeof err.toString === "function") {
-          msg = err.toString();
+        msg = err2.stack;
+        if (!msg && typeof err2.toString === "function") {
+          msg = err2.toString();
         }
       }
       return msg || statuses.message[status];
     }
-    function getErrorStatusCode(err) {
-      if (typeof err.status === "number" && err.status >= 400 && err.status < 600) {
-        return err.status;
+    function getErrorStatusCode(err2) {
+      if (typeof err2.status === "number" && err2.status >= 400 && err2.status < 600) {
+        return err2.status;
       }
-      if (typeof err.statusCode === "number" && err.statusCode >= 400 && err.statusCode < 600) {
-        return err.statusCode;
+      if (typeof err2.statusCode === "number" && err2.statusCode >= 400 && err2.statusCode < 600) {
+        return err2.statusCode;
       }
       return void 0;
     }
@@ -19871,10 +19871,10 @@ var require_proxy_addr = __commonJS({
       if (pos === -1 && ip.kind() === "ipv6" && ip.isIPv4MappedAddress()) {
         ip = ip.toIPv4Address();
       }
-      var max = ip.kind() === "ipv6" ? 128 : 32;
+      var max2 = ip.kind() === "ipv6" ? 128 : 32;
       var range = pos !== -1 ? note.substring(pos + 1, note.length) : null;
       if (range === null) {
-        range = max;
+        range = max2;
       } else if (DIGIT_REGEXP.test(range)) {
         range = parseInt(range, 10);
       } else if (ip.kind() === "ipv4" && isip(range)) {
@@ -19882,7 +19882,7 @@ var require_proxy_addr = __commonJS({
       } else {
         range = null;
       }
-      if (range <= 0 || range > max) {
+      if (range <= 0 || range > max2) {
         throw new TypeError("invalid range on address: " + note);
       }
       return [ip, range];
@@ -20614,8 +20614,8 @@ var require_layer = __commonJS({
             next(error41 || new Error("Rejected promise"));
           });
         }
-      } catch (err) {
-        next(err);
+      } catch (err2) {
+        next(err2);
       }
     };
     Layer.prototype.handleRequest = function handleRequest(req, res, next) {
@@ -20633,8 +20633,8 @@ var require_layer = __commonJS({
             next(error40 || new Error("Rejected promise"));
           });
         }
-      } catch (err) {
-        next(err);
+      } catch (err2) {
+        next(err2);
       }
     };
     Layer.prototype.match = function match(path10) {
@@ -20667,12 +20667,12 @@ var require_layer = __commonJS({
       }
       try {
         return decodeURIComponent(val);
-      } catch (err) {
-        if (err instanceof URIError) {
-          err.message = "Failed to decode param '" + val + "'";
-          err.status = 400;
+      } catch (err2) {
+        if (err2 instanceof URIError) {
+          err2.message = "Failed to decode param '" + val + "'";
+          err2.status = 400;
         }
-        throw err;
+        throw err2;
       }
     }
     function loosen(path10) {
@@ -20736,18 +20736,18 @@ var require_route = __commonJS({
       }
       req.route = this;
       next();
-      function next(err) {
-        if (err && err === "route") {
+      function next(err2) {
+        if (err2 && err2 === "route") {
           return done();
         }
-        if (err && err === "router") {
-          return done(err);
+        if (err2 && err2 === "router") {
+          return done(err2);
         }
         if (idx >= stack.length) {
-          return done(err);
+          return done(err2);
         }
         if (++sync > 100) {
-          return setImmediate(next, err);
+          return setImmediate(next, err2);
         }
         let layer;
         let match;
@@ -20756,10 +20756,10 @@ var require_route = __commonJS({
           match = !layer.method || layer.method === method;
         }
         if (match !== true) {
-          return done(err);
+          return done(err2);
         }
-        if (err) {
-          layer.handleError(err, req, res, next);
+        if (err2) {
+          layer.handleError(err2, req, res, next);
         } else {
           layer.handleRequest(req, res, next);
         }
@@ -20885,8 +20885,8 @@ var require_router = __commonJS({
       req.baseUrl = parentUrl;
       req.originalUrl = req.originalUrl || req.url;
       next();
-      function next(err) {
-        let layerError = err === "route" ? null : err;
+      function next(err2) {
+        let layerError = err2 === "route" ? null : err2;
         if (slashAdded) {
           req.url = req.url.slice(1);
           slashAdded = false;
@@ -20905,7 +20905,7 @@ var require_router = __commonJS({
           return;
         }
         if (++sync > 100) {
-          return setImmediate(next, err);
+          return setImmediate(next, err2);
         }
         const path10 = getPathname(req);
         if (path10 == null) {
@@ -20948,9 +20948,9 @@ var require_router = __commonJS({
         }
         req.params = self2.mergeParams ? mergeParams(layer.params, parentParams) : layer.params;
         const layerPath = layer.path;
-        processParams(self2.params, layer, paramcalled, req, res, function(err2) {
-          if (err2) {
-            next(layerError || err2);
+        processParams(self2.params, layer, paramcalled, req, res, function(err3) {
+          if (err3) {
+            next(layerError || err3);
           } else if (route) {
             layer.handleRequest(req, res, next);
           } else {
@@ -21042,9 +21042,9 @@ var require_router = __commonJS({
       };
     });
     function generateOptionsResponder(res, methods2) {
-      return function onDone(fn, err) {
-        if (err || methods2.length === 0) {
-          return fn(err);
+      return function onDone(fn, err2) {
+        if (err2 || methods2.length === 0) {
+          return fn(err2);
         }
         trySendOptionsResponse(res, methods2, fn);
       };
@@ -21052,7 +21052,7 @@ var require_router = __commonJS({
     function getPathname(req) {
       try {
         return parseUrl(req).pathname;
-      } catch (err) {
+      } catch (err2) {
         return void 0;
       }
     }
@@ -21068,8 +21068,8 @@ var require_router = __commonJS({
     function matchLayer(layer, path10) {
       try {
         return layer.match(path10);
-      } catch (err) {
-        return err;
+      } catch (err2) {
+        return err2;
       }
     }
     function mergeParams(params, parent) {
@@ -21107,9 +21107,9 @@ var require_router = __commonJS({
       let paramVal;
       let paramCallbacks;
       let paramCalled;
-      function param(err) {
-        if (err) {
-          return done(err);
+      function param(err2) {
+        if (err2) {
+          return done(err2);
         }
         if (i >= keys.length) {
           return done();
@@ -21133,12 +21133,12 @@ var require_router = __commonJS({
         };
         paramCallback();
       }
-      function paramCallback(err) {
+      function paramCallback(err2) {
         const fn = paramCallbacks[paramIndex++];
         paramCalled.value = req.params[key];
-        if (err) {
-          paramCalled.error = err;
-          param(err);
+        if (err2) {
+          paramCalled.error = err2;
+          param(err2);
           return;
         }
         if (!fn) return param();
@@ -21187,8 +21187,8 @@ var require_router = __commonJS({
     function trySendOptionsResponse(res, methods2, next) {
       try {
         sendOptionsResponse(res, methods2);
-      } catch (err) {
-        next(err);
+      } catch (err2) {
+        next(err2);
       }
     }
     function wrap(old, fn) {
@@ -21320,10 +21320,10 @@ var require_application = __commonJS({
         fn2.parent = this;
         router12.use(path10, function mounted_app(req, res, next) {
           var orig = req.app;
-          fn2.handle(req, res, function(err) {
+          fn2.handle(req, res, function(err2) {
             Object.setPrototypeOf(req, orig.request);
             Object.setPrototypeOf(res, orig.response);
-            next(err);
+            next(err2);
           });
         });
         fn2.emit("mount", this);
@@ -21433,9 +21433,9 @@ var require_application = __commonJS({
         });
         if (!view.path) {
           var dirs = Array.isArray(view.root) && view.root.length > 1 ? 'directories "' + view.root.slice(0, -1).join('", "') + '" or "' + view.root[view.root.length - 1] + '"' : 'directory "' + view.root + '"';
-          var err = new Error('Failed to lookup view "' + name + '" in views ' + dirs);
-          err.view = view;
-          return done(err);
+          var err2 = new Error('Failed to lookup view "' + name + '" in views ' + dirs);
+          err2.view = view;
+          return done(err2);
         }
         if (renderOptions.cache) {
           cache[name] = view;
@@ -21452,14 +21452,14 @@ var require_application = __commonJS({
       }
       return server.listen.apply(server, args);
     };
-    function logerror(err) {
-      if (this.get("env") !== "test") console.error(err.stack || err.toString());
+    function logerror(err2) {
+      if (this.get("env") !== "test") console.error(err2.stack || err2.toString());
     }
     function tryRender(view, options, callback) {
       try {
         view.render(options, callback);
-      } catch (err) {
-        callback(err);
+      } catch (err2) {
+        callback(err2);
       }
     }
   }
@@ -22637,12 +22637,12 @@ var require_cookie = __commonJS({
       } while (index < len);
       return obj;
     }
-    function startIndex(str, index, max) {
+    function startIndex(str, index, max2) {
       do {
         var code = str.charCodeAt(index);
         if (code !== 32 && code !== 9) return index;
-      } while (++index < max);
-      return max;
+      } while (++index < max2);
+      return max2;
     }
     function endIndex(str, index, min) {
       while (index > min) {
@@ -22807,16 +22807,16 @@ var require_send = __commonJS({
       this._root = opts.root ? resolve(opts.root) : null;
     }
     util2.inherits(SendStream, Stream);
-    SendStream.prototype.error = function error40(status, err) {
+    SendStream.prototype.error = function error40(status, err2) {
       if (hasListeners(this, "error")) {
-        return this.emit("error", createHttpError(status, err));
+        return this.emit("error", createHttpError(status, err2));
       }
       var res = this.res;
       var msg = statuses.message[status] || String(status);
       var doc = createHtmlDocument("Error", escapeHtml(msg));
       clearHeaders(res);
-      if (err && err.headers) {
-        setHeaders(res, err.headers);
+      if (err2 && err2.headers) {
+        setHeaders(res, err2.headers);
       }
       res.statusCode = status;
       res.setHeader("Content-Type", "text/html; charset=UTF-8");
@@ -22864,9 +22864,9 @@ var require_send = __commonJS({
       res.end();
     };
     SendStream.prototype.headersAlreadySent = function headersAlreadySent() {
-      var err = new Error("Can't set headers after they are sent.");
+      var err2 = new Error("Can't set headers after they are sent.");
       debug("headers already sent");
-      this.error(500, err);
+      this.error(500, err2);
     };
     SendStream.prototype.isCachable = function isCachable() {
       var statusCode = this.res.statusCode;
@@ -23045,25 +23045,25 @@ var require_send = __commonJS({
       var i = 0;
       var self2 = this;
       debug('stat "%s"', path11);
-      fs2.stat(path11, function onstat(err, stat2) {
+      fs2.stat(path11, function onstat(err2, stat2) {
         var pathEndsWithSep = path11[path11.length - 1] === sep;
-        if (err && err.code === "ENOENT" && !extname(path11) && !pathEndsWithSep) {
-          return next(err);
+        if (err2 && err2.code === "ENOENT" && !extname(path11) && !pathEndsWithSep) {
+          return next(err2);
         }
-        if (err) return self2.onStatError(err);
+        if (err2) return self2.onStatError(err2);
         if (stat2.isDirectory()) return self2.redirect(path11);
         if (pathEndsWithSep) return self2.error(404);
         self2.emit("file", path11, stat2);
         self2.send(path11, stat2);
       });
-      function next(err) {
+      function next(err2) {
         if (self2._extensions.length <= i) {
-          return err ? self2.onStatError(err) : self2.error(404);
+          return err2 ? self2.onStatError(err2) : self2.error(404);
         }
         var p = path11 + "." + self2._extensions[i++];
         debug('stat "%s"', p);
-        fs2.stat(p, function(err2, stat2) {
-          if (err2) return next(err2);
+        fs2.stat(p, function(err3, stat2) {
+          if (err3) return next(err3);
           if (stat2.isDirectory()) return next();
           self2.emit("file", p, stat2);
           self2.send(p, stat2);
@@ -23073,15 +23073,15 @@ var require_send = __commonJS({
     SendStream.prototype.sendIndex = function sendIndex(path11) {
       var i = -1;
       var self2 = this;
-      function next(err) {
+      function next(err2) {
         if (++i >= self2._index.length) {
-          if (err) return self2.onStatError(err);
+          if (err2) return self2.onStatError(err2);
           return self2.error(404);
         }
         var p = join(path11, self2._index[i]);
         debug('stat "%s"', p);
-        fs2.stat(p, function(err2, stat2) {
-          if (err2) return next(err2);
+        fs2.stat(p, function(err3, stat2) {
+          if (err3) return next(err3);
           if (stat2.isDirectory()) return next();
           self2.emit("file", p, stat2);
           self2.send(p, stat2);
@@ -23099,9 +23099,9 @@ var require_send = __commonJS({
         stream2.destroy();
       }
       onFinished(res, cleanup);
-      stream2.on("error", function onerror(err) {
+      stream2.on("error", function onerror(err2) {
         cleanup();
-        self2.onStatError(err);
+        self2.onStatError(err2);
       });
       stream2.on("end", function onend() {
         self2.emit("end");
@@ -23169,16 +23169,16 @@ var require_send = __commonJS({
     function createHtmlDocument(title, body) {
       return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>' + title + "</title>\n</head>\n<body>\n<pre>" + body + "</pre>\n</body>\n</html>\n";
     }
-    function createHttpError(status, err) {
-      if (!err) {
+    function createHttpError(status, err2) {
+      if (!err2) {
         return createError(status);
       }
-      return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
+      return err2 instanceof Error ? createError(status, err2, { expose: false }) : createError(status, err2);
     }
     function decode(path11) {
       try {
         return decodeURIComponent(path11);
-      } catch (err) {
+      } catch (err2) {
         return -1;
       }
     }
@@ -23499,11 +23499,11 @@ var require_response = __commonJS({
       var pathname = encodeURI(path11);
       opts.etag = this.app.enabled("etag");
       var file2 = send(req, pathname, opts);
-      sendfile(res2, file2, opts, function(err) {
-        if (done) return done(err);
-        if (err && err.code === "EISDIR") return next();
-        if (err && err.code !== "ECONNABORTED" && err.syscall !== "write") {
-          next(err);
+      sendfile(res2, file2, opts, function(err2) {
+        if (done) return done(err2);
+        if (err2 && err2.code === "EISDIR") return next();
+        if (err2 && err2.code !== "ECONNABORTED" && err2.syscall !== "write") {
+          next(err2);
         }
       });
     };
@@ -23686,8 +23686,8 @@ var require_response = __commonJS({
         opts = {};
       }
       opts._locals = self2.locals;
-      done = done || function(err, str) {
-        if (err) return req.next(err);
+      done = done || function(err2, str) {
+        if (err2) return req.next(err2);
         self2.send(str);
       };
       app3.render(view, opts, done);
@@ -23698,21 +23698,21 @@ var require_response = __commonJS({
       function onaborted() {
         if (done) return;
         done = true;
-        var err = new Error("Request aborted");
-        err.code = "ECONNABORTED";
-        callback(err);
+        var err2 = new Error("Request aborted");
+        err2.code = "ECONNABORTED";
+        callback(err2);
       }
       function ondirectory() {
         if (done) return;
         done = true;
-        var err = new Error("EISDIR, read");
-        err.code = "EISDIR";
-        callback(err);
+        var err2 = new Error("EISDIR, read");
+        err2.code = "EISDIR";
+        callback(err2);
       }
-      function onerror(err) {
+      function onerror(err2) {
         if (done) return;
         done = true;
-        callback(err);
+        callback(err2);
       }
       function onend() {
         if (done) return;
@@ -23722,9 +23722,9 @@ var require_response = __commonJS({
       function onfile() {
         streaming = false;
       }
-      function onfinish(err) {
-        if (err && err.code === "ECONNRESET") return onaborted();
-        if (err) return onerror(err);
+      function onfinish(err2) {
+        if (err2 && err2.code === "ECONNRESET") return onaborted();
+        if (err2) return onerror(err2);
         if (done) return;
         setImmediate(function() {
           if (streaming !== false && !done) {
@@ -23834,9 +23834,9 @@ var require_serve_static = __commonJS({
             forwardError = true;
           });
         }
-        stream.on("error", function error40(err) {
-          if (forwardError || !(err.statusCode < 500)) {
-            next(err);
+        stream.on("error", function error40(err2) {
+          if (forwardError || !(err2.statusCode < 500)) {
+            next(err2);
             return;
           }
           next();
@@ -23972,7 +23972,7 @@ var require_object_assign = __commonJS({
           return false;
         }
         return true;
-      } catch (err) {
+      } catch (err2) {
         return false;
       }
     }
@@ -24175,9 +24175,9 @@ var require_lib3 = __commonJS({
           };
         }
         return function corsMiddleware(req, res, next) {
-          optionsCallback(req, function(err, options) {
-            if (err) {
-              next(err);
+          optionsCallback(req, function(err2, options) {
+            if (err2) {
+              next(err2);
             } else {
               var corsOptions = assign({}, defaults2, options);
               var originCallback = null;
@@ -24189,9 +24189,9 @@ var require_lib3 = __commonJS({
                 };
               }
               if (originCallback) {
-                originCallback(req.headers.origin, function(err2, origin) {
-                  if (err2 || !origin) {
-                    next(err2);
+                originCallback(req.headers.origin, function(err22, origin) {
+                  if (err22 || !origin) {
+                    next(err22);
                   } else {
                     corsOptions.origin = origin;
                     cors2(corsOptions, req, res, next);
@@ -24213,50 +24213,50 @@ var require_lib3 = __commonJS({
 var require_err_helpers = __commonJS({
   "../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err-helpers.js"(exports, module) {
     "use strict";
-    var isErrorLike = (err) => {
-      return err && typeof err.message === "string";
+    var isErrorLike = (err2) => {
+      return err2 && typeof err2.message === "string";
     };
-    var getErrorCause = (err) => {
-      if (!err) return;
-      const cause = err.cause;
+    var getErrorCause = (err2) => {
+      if (!err2) return;
+      const cause = err2.cause;
       if (typeof cause === "function") {
-        const causeResult = err.cause();
+        const causeResult = err2.cause();
         return isErrorLike(causeResult) ? causeResult : void 0;
       } else {
         return isErrorLike(cause) ? cause : void 0;
       }
     };
-    var _stackWithCauses = (err, seen) => {
-      if (!isErrorLike(err)) return "";
-      const stack = err.stack || "";
-      if (seen.has(err)) {
+    var _stackWithCauses = (err2, seen) => {
+      if (!isErrorLike(err2)) return "";
+      const stack = err2.stack || "";
+      if (seen.has(err2)) {
         return stack + "\ncauses have become circular...";
       }
-      const cause = getErrorCause(err);
+      const cause = getErrorCause(err2);
       if (cause) {
-        seen.add(err);
+        seen.add(err2);
         return stack + "\ncaused by: " + _stackWithCauses(cause, seen);
       } else {
         return stack;
       }
     };
-    var stackWithCauses = (err) => _stackWithCauses(err, /* @__PURE__ */ new Set());
-    var _messageWithCauses = (err, seen, skip) => {
-      if (!isErrorLike(err)) return "";
-      const message = skip ? "" : err.message || "";
-      if (seen.has(err)) {
+    var stackWithCauses = (err2) => _stackWithCauses(err2, /* @__PURE__ */ new Set());
+    var _messageWithCauses = (err2, seen, skip) => {
+      if (!isErrorLike(err2)) return "";
+      const message = skip ? "" : err2.message || "";
+      if (seen.has(err2)) {
         return message + ": ...";
       }
-      const cause = getErrorCause(err);
+      const cause = getErrorCause(err2);
       if (cause) {
-        seen.add(err);
-        const skipIfVErrorStyleCause = typeof err.cause === "function";
+        seen.add(err2);
+        const skipIfVErrorStyleCause = typeof err2.cause === "function";
         return message + (skipIfVErrorStyleCause ? "" : ": ") + _messageWithCauses(cause, seen, skipIfVErrorStyleCause);
       } else {
         return message;
       }
     };
-    var messageWithCauses = (err) => _messageWithCauses(err, /* @__PURE__ */ new Set());
+    var messageWithCauses = (err2) => _messageWithCauses(err2, /* @__PURE__ */ new Set());
     module.exports = {
       isErrorLike,
       getErrorCause,
@@ -24326,21 +24326,21 @@ var require_err = __commonJS({
     var { pinoErrProto, pinoErrorSymbols } = require_err_proto();
     var { seen } = pinoErrorSymbols;
     var { toString } = Object.prototype;
-    function errSerializer(err) {
-      if (!isErrorLike(err)) {
-        return err;
+    function errSerializer(err2) {
+      if (!isErrorLike(err2)) {
+        return err2;
       }
-      err[seen] = void 0;
+      err2[seen] = void 0;
       const _err = Object.create(pinoErrProto);
-      _err.type = toString.call(err.constructor) === "[object Function]" ? err.constructor.name : err.name;
-      _err.message = messageWithCauses(err);
-      _err.stack = stackWithCauses(err);
-      if (Array.isArray(err.errors)) {
-        _err.aggregateErrors = err.errors.map((err2) => errSerializer(err2));
+      _err.type = toString.call(err2.constructor) === "[object Function]" ? err2.constructor.name : err2.name;
+      _err.message = messageWithCauses(err2);
+      _err.stack = stackWithCauses(err2);
+      if (Array.isArray(err2.errors)) {
+        _err.aggregateErrors = err2.errors.map((err3) => errSerializer(err3));
       }
-      for (const key in err) {
+      for (const key in err2) {
         if (_err[key] === void 0) {
-          const val = err[key];
+          const val = err2[key];
           if (isErrorLike(val)) {
             if (key !== "cause" && !Object.prototype.hasOwnProperty.call(val, seen)) {
               _err[key] = errSerializer(val);
@@ -24350,8 +24350,8 @@ var require_err = __commonJS({
           }
         }
       }
-      delete err[seen];
-      _err.raw = err;
+      delete err2[seen];
+      _err.raw = err2;
       return _err;
     }
   }
@@ -24366,24 +24366,24 @@ var require_err_with_cause = __commonJS({
     var { pinoErrProto, pinoErrorSymbols } = require_err_proto();
     var { seen } = pinoErrorSymbols;
     var { toString } = Object.prototype;
-    function errWithCauseSerializer(err) {
-      if (!isErrorLike(err)) {
-        return err;
+    function errWithCauseSerializer(err2) {
+      if (!isErrorLike(err2)) {
+        return err2;
       }
-      err[seen] = void 0;
+      err2[seen] = void 0;
       const _err = Object.create(pinoErrProto);
-      _err.type = toString.call(err.constructor) === "[object Function]" ? err.constructor.name : err.name;
-      _err.message = err.message;
-      _err.stack = err.stack;
-      if (Array.isArray(err.errors)) {
-        _err.aggregateErrors = err.errors.map((err2) => errWithCauseSerializer(err2));
+      _err.type = toString.call(err2.constructor) === "[object Function]" ? err2.constructor.name : err2.name;
+      _err.message = err2.message;
+      _err.stack = err2.stack;
+      if (Array.isArray(err2.errors)) {
+        _err.aggregateErrors = err2.errors.map((err3) => errWithCauseSerializer(err3));
       }
-      if (isErrorLike(err.cause) && !Object.prototype.hasOwnProperty.call(err.cause, seen)) {
-        _err.cause = errWithCauseSerializer(err.cause);
+      if (isErrorLike(err2.cause) && !Object.prototype.hasOwnProperty.call(err2.cause, seen)) {
+        _err.cause = errWithCauseSerializer(err2.cause);
       }
-      for (const key in err) {
+      for (const key in err2) {
         if (_err[key] === void 0) {
-          const val = err[key];
+          const val = err2[key];
           if (isErrorLike(val)) {
             if (!Object.prototype.hasOwnProperty.call(val, seen)) {
               _err[key] = errWithCauseSerializer(val);
@@ -24393,8 +24393,8 @@ var require_err_with_cause = __commonJS({
           }
         }
       }
-      delete err[seen];
-      _err.raw = err;
+      delete err2[seen];
+      _err.raw = err2;
       return _err;
     }
   }
@@ -24561,8 +24561,8 @@ var require_pino_std_serializers = __commonJS({
       res: resSerializers.resSerializer,
       wrapErrorSerializer: function wrapErrorSerializer(customSerializer) {
         if (customSerializer === errSerializer) return customSerializer;
-        return function wrapErrSerializer(err) {
-          return customSerializer(errSerializer(err));
+        return function wrapErrSerializer(err2) {
+          return customSerializer(errSerializer(err2));
         };
       },
       wrapRequestSerializer: function wrapRequestSerializer(customSerializer) {
@@ -25401,24 +25401,24 @@ var require_sonic_boom = __commonJS({
       sonic._opening = true;
       sonic._writing = true;
       sonic._asyncDrainScheduled = false;
-      function fileOpened(err, fd) {
-        if (err) {
+      function fileOpened(err2, fd2) {
+        if (err2) {
           sonic._reopening = false;
           sonic._writing = false;
           sonic._opening = false;
           if (sonic.sync) {
             process.nextTick(() => {
               if (sonic.listenerCount("error") > 0) {
-                sonic.emit("error", err);
+                sonic.emit("error", err2);
               }
             });
           } else {
-            sonic.emit("error", err);
+            sonic.emit("error", err2);
           }
           return;
         }
         const reopening = sonic._reopening;
-        sonic.fd = fd;
+        sonic.fd = fd2;
         sonic.file = file2;
         sonic._reopening = false;
         sonic._opening = false;
@@ -25442,15 +25442,15 @@ var require_sonic_boom = __commonJS({
       if (sonic.sync) {
         try {
           if (sonic.mkdir) fs2.mkdirSync(path10.dirname(file2), { recursive: true });
-          const fd = fs2.openSync(file2, flags, mode);
-          fileOpened(null, fd);
-        } catch (err) {
-          fileOpened(err);
-          throw err;
+          const fd2 = fs2.openSync(file2, flags, mode);
+          fileOpened(null, fd2);
+        } catch (err2) {
+          fileOpened(err2);
+          throw err2;
         }
       } else if (sonic.mkdir) {
-        fs2.mkdir(path10.dirname(file2), { recursive: true }, (err) => {
-          if (err) return fileOpened(err);
+        fs2.mkdir(path10.dirname(file2), { recursive: true }, (err2) => {
+          if (err2) return fileOpened(err2);
           fs2.open(file2, flags, mode, fileOpened);
         });
       } else {
@@ -25461,8 +25461,8 @@ var require_sonic_boom = __commonJS({
       if (!(this instanceof SonicBoom)) {
         return new SonicBoom(opts);
       }
-      let { fd, dest, minLength, maxLength, maxWrite, periodicFlush, sync, append = true, mkdir: mkdir3, retryEAGAIN, fsync, contentMode, mode } = opts || {};
-      fd = fd || dest;
+      let { fd: fd2, dest, minLength, maxLength, maxWrite, periodicFlush, sync, append = true, mkdir: mkdir3, retryEAGAIN, fsync, contentMode, mode } = opts || {};
+      fd2 = fd2 || dest;
       this._len = 0;
       this.fd = -1;
       this._bufs = [];
@@ -25518,33 +25518,33 @@ var require_sonic_boom = __commonJS({
       } else {
         throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
       }
-      if (typeof fd === "number") {
-        this.fd = fd;
+      if (typeof fd2 === "number") {
+        this.fd = fd2;
         process.nextTick(() => this.emit("ready"));
-      } else if (typeof fd === "string") {
-        openFile(fd, this);
+      } else if (typeof fd2 === "string") {
+        openFile(fd2, this);
       } else {
         throw new Error("SonicBoom supports only file descriptors and files");
       }
       if (this.minLength >= this.maxWrite) {
         throw new Error(`minLength should be smaller than maxWrite (${this.maxWrite})`);
       }
-      this.release = (err, n) => {
-        if (err) {
-          if ((err.code === "EAGAIN" || err.code === "EBUSY") && this.retryEAGAIN(err, this._writingBuf.length, this._len - this._writingBuf.length)) {
+      this.release = (err2, n) => {
+        if (err2) {
+          if ((err2.code === "EAGAIN" || err2.code === "EBUSY") && this.retryEAGAIN(err2, this._writingBuf.length, this._len - this._writingBuf.length)) {
             if (this.sync) {
               try {
                 sleep(BUSY_WRITE_TIMEOUT);
                 this.release(void 0, 0);
-              } catch (err2) {
-                this.release(err2);
+              } catch (err3) {
+                this.release(err3);
               }
             } else {
               setTimeout(fsWrite, BUSY_WRITE_TIMEOUT);
             }
           } else {
             this._writing = false;
-            this.emit("error", err);
+            this.emit("error", err2);
           }
           return;
         }
@@ -25564,8 +25564,8 @@ var require_sonic_boom = __commonJS({
               this._len = releasedBufObj2.len;
               this._writingBuf = releasedBufObj2.writingBuf;
             } while (this._writingBuf.length);
-          } catch (err2) {
-            this.release(err2);
+          } catch (err3) {
+            this.release(err3);
             return;
           }
         }
@@ -25684,12 +25684,12 @@ var require_sonic_boom = __commonJS({
       const onDrain = () => {
         if (!this._fsync) {
           try {
-            fs2.fsync(this.fd, (err) => {
+            fs2.fsync(this.fd, (err2) => {
               this._flushPending = false;
-              cb(err);
+              cb(err2);
             });
-          } catch (err) {
-            cb(err);
+          } catch (err2) {
+            cb(err2);
           }
         } else {
           this._flushPending = false;
@@ -25697,9 +25697,9 @@ var require_sonic_boom = __commonJS({
         }
         this.off("error", onError);
       };
-      const onError = (err) => {
+      const onError = (err2) => {
         this._flushPending = false;
-        cb(err);
+        cb(err2);
         this.off("drain", onDrain);
       };
       this.once("drain", onDrain);
@@ -25783,12 +25783,12 @@ var require_sonic_boom = __commonJS({
       if (this._writing) {
         return;
       }
-      const fd = this.fd;
+      const fd2 = this.fd;
       this.once("ready", () => {
-        if (fd !== this.fd) {
-          fs2.close(fd, (err) => {
-            if (err) {
-              return this.emit("error", err);
+        if (fd2 !== this.fd) {
+          fs2.close(fd2, (err2) => {
+            if (err2) {
+              return this.emit("error", err2);
             }
           });
         }
@@ -25842,10 +25842,10 @@ var require_sonic_boom = __commonJS({
           if (buf.length <= 0) {
             this._bufs.shift();
           }
-        } catch (err) {
-          const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
-          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
-            throw err;
+        } catch (err2) {
+          const shouldRetry = err2.code === "EAGAIN" || err2.code === "EBUSY";
+          if (shouldRetry && !this.retryEAGAIN(err2, buf.length, this._len - buf.length)) {
+            throw err2;
           }
           sleep(BUSY_WRITE_TIMEOUT);
         }
@@ -25879,10 +25879,10 @@ var require_sonic_boom = __commonJS({
             this._bufs.shift();
             this._lens.shift();
           }
-        } catch (err) {
-          const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
-          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
-            throw err;
+        } catch (err2) {
+          const shouldRetry = err2.code === "EAGAIN" || err2.code === "EBUSY";
+          if (shouldRetry && !this.retryEAGAIN(err2, buf.length, this._len - buf.length)) {
+            throw err2;
           }
           sleep(BUSY_WRITE_TIMEOUT);
         }
@@ -25902,8 +25902,8 @@ var require_sonic_boom = __commonJS({
         try {
           const written = Buffer.isBuffer(this._writingBuf) ? fs2.writeSync(this.fd, this._writingBuf) : fs2.writeSync(this.fd, this._writingBuf, "utf8");
           release(null, written);
-        } catch (err) {
-          release(err);
+        } catch (err2) {
+          release(err2);
         }
       } else {
         fs2.write(this.fd, this._writingBuf, release);
@@ -25917,8 +25917,8 @@ var require_sonic_boom = __commonJS({
         try {
           const written = fs2.writeSync(this.fd, this._writingBuf);
           release(null, written);
-        } catch (err) {
-          release(err);
+        } catch (err2) {
+          release(err2);
         }
       } else {
         if (kCopyBuffer) {
@@ -25950,9 +25950,9 @@ var require_sonic_boom = __commonJS({
           done();
         }
       }
-      function done(err) {
-        if (err) {
-          sonic.emit("error", err);
+      function done(err2) {
+        if (err2) {
+          sonic.emit("error", err2);
           return;
         }
         if (sonic._ending && !sonic._writing) {
@@ -26130,7 +26130,7 @@ var require_wait = __commonJS({
     "use strict";
     var MAX_TIMEOUT = 1e3;
     function wait(state, index, expected, timeout, done) {
-      const max = Date.now() + timeout;
+      const max2 = Date.now() + timeout;
       let current = Atomics.load(state, index);
       if (current === expected) {
         done(null, "ok");
@@ -26138,7 +26138,7 @@ var require_wait = __commonJS({
       }
       let prior = current;
       const check2 = (backoff) => {
-        if (Date.now() > max) {
+        if (Date.now() > max2) {
           done(null, "timed-out");
         } else {
           setTimeout(() => {
@@ -26156,14 +26156,14 @@ var require_wait = __commonJS({
       check2(1);
     }
     function waitDiff(state, index, expected, timeout, done) {
-      const max = Date.now() + timeout;
+      const max2 = Date.now() + timeout;
       let current = Atomics.load(state, index);
       if (current !== expected) {
         done(null, "ok");
         return;
       }
       const check2 = (backoff) => {
-        if (Date.now() > max) {
+        if (Date.now() > max2) {
           done(null, "timed-out");
         } else {
           setTimeout(() => {
@@ -26201,7 +26201,7 @@ var require_thread_stream = __commonJS({
     "use strict";
     var { version: version3 } = require_package();
     var { EventEmitter } = __require("events");
-    var { Worker } = __require("worker_threads");
+    var { Worker: Worker2 } = __require("worker_threads");
     var { join } = __require("path");
     var { pathToFileURL } = __require("url");
     var { wait } = require_wait();
@@ -26239,7 +26239,7 @@ var require_thread_stream = __commonJS({
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
       const toExecute = bundlerOverrides["thread-stream-worker"] || join(__dirname, "lib", "worker.js");
-      const worker = new Worker(toExecute, {
+      const worker = new Worker2(toExecute, {
         ...opts.workerOpts,
         trackUnmanagedFds: false,
         workerData: {
@@ -26396,8 +26396,8 @@ var require_thread_stream = __commonJS({
           try {
             writeSync(this);
             this[kImpl].flushing = true;
-          } catch (err) {
-            destroy(this, err);
+          } catch (err2) {
+            destroy(this, err2);
             return false;
           }
         }
@@ -26406,8 +26406,8 @@ var require_thread_stream = __commonJS({
           try {
             writeSync(this);
             return true;
-          } catch (err) {
-            destroy(this, err);
+          } catch (err2) {
+            destroy(this, err2);
             return false;
           }
         }
@@ -26433,10 +26433,10 @@ var require_thread_stream = __commonJS({
           return;
         }
         const writeIndex = Atomics.load(this[kImpl].state, WRITE_INDEX);
-        wait(this[kImpl].state, READ_INDEX, writeIndex, Infinity, (err, res) => {
-          if (err) {
-            destroy(this, err);
-            process.nextTick(cb, err);
+        wait(this[kImpl].state, READ_INDEX, writeIndex, Infinity, (err2, res) => {
+          if (err2) {
+            destroy(this, err2);
+            process.nextTick(cb, err2);
             return;
           }
           if (res === "not-equal") {
@@ -26487,19 +26487,19 @@ var require_thread_stream = __commonJS({
         return this[kImpl].errored;
       }
     };
-    function error40(stream, err) {
+    function error40(stream, err2) {
       setImmediate(() => {
-        stream.emit("error", err);
+        stream.emit("error", err2);
       });
     }
-    function destroy(stream, err) {
+    function destroy(stream, err2) {
       if (stream[kImpl].destroyed) {
         return;
       }
       stream[kImpl].destroyed = true;
-      if (err) {
-        stream[kImpl].errored = err;
-        error40(stream, err);
+      if (err2) {
+        stream[kImpl].errored = err2;
+        error40(stream, err2);
       }
       if (!stream.worker.exited) {
         stream.worker.terminate().catch(() => {
@@ -26550,8 +26550,8 @@ var require_thread_stream = __commonJS({
           stream[kImpl].finished = true;
           stream.emit("finish");
         });
-      } catch (err) {
-        destroy(stream, err);
+      } catch (err2) {
+        destroy(stream, err2);
       }
     }
     function writeSync(stream) {
@@ -26622,7 +26622,7 @@ var require_thread_stream = __commonJS({
 var require_transport = __commonJS({
   "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/transport.js"(exports, module) {
     "use strict";
-    var { createRequire } = __require("module");
+    var { createRequire: createRequire2 } = __require("module");
     var getCallers = require_caller();
     var { join, isAbsolute, sep } = __require("node:path");
     var sleep = require_atomic_sleep();
@@ -26733,9 +26733,9 @@ var require_transport = __commonJS({
         for (const filePath of callers) {
           try {
             const context = filePath === "node:repl" ? process.cwd() + sep : filePath;
-            fixTarget2 = createRequire(context).resolve(origin);
+            fixTarget2 = createRequire2(context).resolve(origin);
             break;
-          } catch (err) {
+          } catch (err2) {
             continue;
           }
         }
@@ -26973,8 +26973,8 @@ var require_tools = __commonJS({
         });
       }
       return stream;
-      function filterBrokenPipe(err) {
-        if (err.code === "EPIPE") {
+      function filterBrokenPipe(err2) {
+        if (err2.code === "EPIPE") {
           stream.write = noop;
           stream.end = noop;
           stream.flushSync = noop;
@@ -26982,7 +26982,7 @@ var require_tools = __commonJS({
           return;
         }
         stream.removeListener("error", filterBrokenPipe);
-        stream.emit("error", err);
+        stream.emit("error", err2);
       }
     }
     function autoEnd(stream, eventName) {
@@ -27063,9 +27063,9 @@ var require_tools = __commonJS({
       };
     }
     function normalizeDestFileDescriptor(destination) {
-      const fd = Number(destination);
-      if (typeof destination === "string" && Number.isFinite(fd)) {
-        return fd;
+      const fd2 = Number(destination);
+      if (typeof destination === "string" && Number.isFinite(fd2)) {
+        return fd2;
       }
       if (destination === void 0) {
         return 1;
@@ -28310,7 +28310,7 @@ var require_pino = __commonJS({
     function pinoBundlerAbsolutePath(p) {
       try {
         const path10 = __require("path");
-        const outputDir = "D:\\Desktop\\FirmStrike_Final\\FirmStrike_Final\\artifacts\\api-server\\dist";
+        const outputDir = "D:\\Desktop\\last\\Firmstrike_final\\artifacts\\api-server\\dist";
         return path10.resolve(outputDir, p.replace(/^\.\//, ""));
       } catch (e) {
         const f = new Function("p", "return new URL(p, import.meta.url).pathname");
@@ -28594,8 +28594,8 @@ var require_logger = __commonJS({
         }
         return defaultValue;
       }
-      function getLogLevelFromCustomLogLevel(customLogLevel2, useLevel2, res, err, req) {
-        return customLogLevel2 ? getValidLogLevel(customLogLevel2(req, res, err), useLevel2) : useLevel2;
+      function getLogLevelFromCustomLogLevel(customLogLevel2, useLevel2, res, err2, req) {
+        return customLogLevel2 ? getValidLogLevel(customLogLevel2(req, res, err2), useLevel2) : useLevel2;
       }
       const customLogLevel = opts.customLogLevel;
       delete opts.customLogLevel;
@@ -28624,11 +28624,11 @@ var require_logger = __commonJS({
       };
       result.logger = logger3;
       return result;
-      function onResFinished(res, logger4, err) {
+      function onResFinished(res, logger4, err2) {
         let log = logger4;
         const responseTime = Date.now() - res[startTime];
         const req = res[reqObject];
-        const level = getLogLevelFromCustomLogLevel(customLogLevel, useLevel, res, err, req);
+        const level = getLogLevelFromCustomLogLevel(customLogLevel, useLevel, res, err2, req);
         if (level === "silent") {
           return;
         }
@@ -28640,8 +28640,8 @@ var require_logger = __commonJS({
             log = logger4.child(customPropBindings);
           }
         }
-        if (err || res.err || res.statusCode >= 500) {
-          const error40 = err || res.err || new Error("failed with status code " + res.statusCode);
+        if (err2 || res.err || res.statusCode >= 500) {
+          const error40 = err2 || res.err || new Error("failed with status code " + res.statusCode);
           log[level](
             onRequestErrorObject(req, res, error40, {
               [resKey]: res,
@@ -28687,11 +28687,11 @@ var require_logger = __commonJS({
         req.allLogs.push(requestLogger);
         res[startTime] = res[startTime] || Date.now();
         res[reqObject] = req;
-        const onResponseComplete = (err) => {
+        const onResponseComplete = (err2) => {
           res.removeListener("close", onResponseComplete);
           res.removeListener("finish", onResponseComplete);
           res.removeListener("error", onResponseComplete);
-          return onResFinished(res, responseLogger, err);
+          return onResFinished(res, responseLogger, err2);
         };
         if (autoLogging) {
           if (autoLoggingIgnore !== null && shouldLogSuccess === true) {
@@ -29578,8 +29578,8 @@ var init_types = __esm({
             } : {
               issues: ctx.common.issues
             };
-          } catch (err) {
-            if (err?.message?.toLowerCase()?.includes("encountered")) {
+          } catch (err2) {
+            if (err2?.message?.toLowerCase()?.includes("encountered")) {
               this["~standard"].async = true;
             }
             ctx.common = {
@@ -30323,14 +30323,14 @@ var init_types = __esm({
         return min;
       }
       get maxLength() {
-        let max = null;
+        let max2 = null;
         for (const ch of this._def.checks) {
           if (ch.kind === "max") {
-            if (max === null || ch.value < max)
-              max = ch.value;
+            if (max2 === null || ch.value < max2)
+              max2 = ch.value;
           }
         }
-        return max;
+        return max2;
       }
     };
     ZodString.create = (params) => {
@@ -30536,20 +30536,20 @@ var init_types = __esm({
         return min;
       }
       get maxValue() {
-        let max = null;
+        let max2 = null;
         for (const ch of this._def.checks) {
           if (ch.kind === "max") {
-            if (max === null || ch.value < max)
-              max = ch.value;
+            if (max2 === null || ch.value < max2)
+              max2 = ch.value;
           }
         }
-        return max;
+        return max2;
       }
       get isInt() {
         return !!this._def.checks.find((ch) => ch.kind === "int" || ch.kind === "multipleOf" && util.isInteger(ch.value));
       }
       get isFinite() {
-        let max = null;
+        let max2 = null;
         let min = null;
         for (const ch of this._def.checks) {
           if (ch.kind === "finite" || ch.kind === "int" || ch.kind === "multipleOf") {
@@ -30558,11 +30558,11 @@ var init_types = __esm({
             if (min === null || ch.value > min)
               min = ch.value;
           } else if (ch.kind === "max") {
-            if (max === null || ch.value < max)
-              max = ch.value;
+            if (max2 === null || ch.value < max2)
+              max2 = ch.value;
           }
         }
-        return Number.isFinite(min) && Number.isFinite(max);
+        return Number.isFinite(min) && Number.isFinite(max2);
       }
     };
     ZodNumber.create = (params) => {
@@ -30727,14 +30727,14 @@ var init_types = __esm({
         return min;
       }
       get maxValue() {
-        let max = null;
+        let max2 = null;
         for (const ch of this._def.checks) {
           if (ch.kind === "max") {
-            if (max === null || ch.value < max)
-              max = ch.value;
+            if (max2 === null || ch.value < max2)
+              max2 = ch.value;
           }
         }
-        return max;
+        return max2;
       }
     };
     ZodBigInt.create = (params) => {
@@ -30861,14 +30861,14 @@ var init_types = __esm({
         return min != null ? new Date(min) : null;
       }
       get maxDate() {
-        let max = null;
+        let max2 = null;
         for (const ch of this._def.checks) {
           if (ch.kind === "max") {
-            if (max === null || ch.value < max)
-              max = ch.value;
+            if (max2 === null || ch.value < max2)
+              max2 = ch.value;
           }
         }
-        return max != null ? new Date(max) : null;
+        return max2 != null ? new Date(max2) : null;
       }
     };
     ZodDate.create = (params) => {
@@ -34181,11 +34181,11 @@ var require_pg_int8 = __commonJS({
 var require_binaryParsers = __commonJS({
   "../../node_modules/.pnpm/pg-types@2.2.0/node_modules/pg-types/lib/binaryParsers.js"(exports, module) {
     var parseInt64 = require_pg_int8();
-    var parseBits = function(data, bits, offset, invert, callback) {
+    var parseBits = function(data, bits2, offset, invert, callback) {
       offset = offset || 0;
       invert = invert || false;
-      callback = callback || function(lastValue, newValue, bits2) {
-        return lastValue * Math.pow(2, bits2) + newValue;
+      callback = callback || function(lastValue, newValue, bits3) {
+        return lastValue * Math.pow(2, bits3) + newValue;
       };
       var offsetBytes = offset >> 3;
       var inv = function(value) {
@@ -34196,22 +34196,22 @@ var require_binaryParsers = __commonJS({
       };
       var mask = 255;
       var firstBits = 8 - offset % 8;
-      if (bits < firstBits) {
-        mask = 255 << 8 - bits & 255;
-        firstBits = bits;
+      if (bits2 < firstBits) {
+        mask = 255 << 8 - bits2 & 255;
+        firstBits = bits2;
       }
       if (offset) {
         mask = mask >> offset % 8;
       }
       var result = 0;
-      if (offset % 8 + bits >= 8) {
+      if (offset % 8 + bits2 >= 8) {
         result = callback(0, inv(data[offsetBytes]) & mask, firstBits);
       }
-      var bytes = bits + offset >> 3;
+      var bytes = bits2 + offset >> 3;
       for (var i = offsetBytes + 1; i < bytes; i++) {
         result = callback(result, inv(data[i]), 8);
       }
-      var lastBits = (bits + offset) % 8;
+      var lastBits = (bits2 + offset) % 8;
       if (lastBits > 0) {
         result = callback(result, inv(data[bytes]) >> 8 - lastBits, lastBits);
       }
@@ -34225,13 +34225,13 @@ var require_binaryParsers = __commonJS({
         return 0;
       }
       var precisionBitsCounter = 1;
-      var parsePrecisionBits = function(lastValue, newValue, bits) {
+      var parsePrecisionBits = function(lastValue, newValue, bits2) {
         if (lastValue === 0) {
           lastValue = 1;
         }
-        for (var i = 1; i <= bits; i++) {
+        for (var i = 1; i <= bits2; i++) {
           precisionBitsCounter /= 2;
-          if ((newValue & 1 << bits - i) > 0) {
+          if ((newValue & 1 << bits2 - i) > 0) {
             lastValue += precisionBitsCounter;
           }
         }
@@ -35150,9 +35150,9 @@ var require_pg_connection_string = __commonJS({
           result = new URL(str.replace("@/", "@___DUMMY___/"), "postgres://base");
           dummyHost = true;
         }
-      } catch (err) {
-        err.input && (err.input = "*****REDACTED*****");
-        throw err;
+      } catch (err2) {
+        err2.input && (err2.input = "*****REDACTED*****");
+        throw err2;
       }
       for (const entry of result.searchParams.entries()) {
         config2[entry[0]] = entry[1];
@@ -35443,8 +35443,8 @@ var require_connection_parameters = __commonJS({
         if (this.client_encoding) {
           params.push("client_encoding=" + quoteParamValue(this.client_encoding));
         }
-        dns.lookup(this.host, function(err, address) {
-          if (err) return cb(err, null);
+        dns.lookup(this.host, function(err2, address) {
+          if (err2) return cb(err2, null);
           params.push("hostaddr=" + quoteParamValue(address));
           return cb(null, params.join(" "));
         });
@@ -35615,8 +35615,8 @@ var require_query = __commonJS({
         }
         try {
           row = this._result.parseRow(msg.fields);
-        } catch (err) {
-          this._canceledDueToError = err;
+        } catch (err2) {
+          this._canceledDueToError = err2;
           return;
         }
         this.emit("row", row, this._result);
@@ -35640,15 +35640,15 @@ var require_query = __commonJS({
           connection.sync();
         }
       }
-      handleError(err, connection) {
+      handleError(err2, connection) {
         if (this._canceledDueToError) {
-          err = this._canceledDueToError;
+          err2 = this._canceledDueToError;
           this._canceledDueToError = false;
         }
         if (this.callback) {
-          return this.callback(err);
+          return this.callback(err2);
         }
-        this.emit("error", err);
+        this.emit("error", err2);
       }
       handleReadyForQuery(con) {
         if (this._canceledDueToError) {
@@ -35657,9 +35657,9 @@ var require_query = __commonJS({
         if (this.callback) {
           try {
             this.callback(null, this._results);
-          } catch (err) {
+          } catch (err2) {
             process.nextTick(() => {
-              throw err;
+              throw err2;
             });
           }
         }
@@ -35722,8 +35722,8 @@ var require_query = __commonJS({
             binary: this.binary,
             valueMapper: utils.prepareValue
           });
-        } catch (err) {
-          this.handleError(err, connection);
+        } catch (err2) {
+          this.handleError(err2, connection);
           return;
         }
         connection.describe({
@@ -36752,8 +36752,8 @@ var require_connection = __commonJS({
           }
           try {
             self2.stream = getSecureStream(options);
-          } catch (err) {
-            return self2.emit("error", err);
+          } catch (err2) {
+            return self2.emit("error", err2);
           }
           self2.attachListeners(self2.stream);
           self2.stream.on("error", reportStreamError);
@@ -36944,9 +36944,9 @@ var require_split2 = __commonJS({
       stream.maxLength = options.maxLength;
       stream.skipOverflow = options.skipOverflow || false;
       stream.overflow = false;
-      stream._destroy = function(err, cb) {
+      stream._destroy = function(err2, cb) {
         this._writableState.errorEmitted = false;
-        cb(err);
+        cb(err2);
       };
       return stream;
     }
@@ -37042,9 +37042,9 @@ var require_helper = __commonJS({
         stream.destroy();
         cb(pass);
       };
-      var onErr = function(err) {
+      var onErr = function(err2) {
         stream.destroy();
-        warn("WARNING: error on reading file: %s", err);
+        warn("WARNING: error on reading file: %s", err2);
         cb(void 0);
       };
       stream.on("error", onErr);
@@ -37134,8 +37134,8 @@ var require_lib4 = __commonJS({
     var helper = require_helper();
     module.exports = function(connInfo, cb) {
       var file2 = helper.getFileName();
-      fs2.stat(file2, function(err, stat2) {
-        if (err || !helper.usePgPass(stat2, file2)) {
+      fs2.stat(file2, function(err2, stat2) {
+        if (err2 || !helper.usePgPass(stat2, file2)) {
           return cb(void 0);
         }
         var st = fs2.createReadStream(file2);
@@ -37243,10 +37243,10 @@ var require_client = __commonJS({
       _getActiveQuery() {
         return this._activeQuery;
       }
-      _errorAllQueries(err) {
+      _errorAllQueries(err2) {
         const enqueueError = (query) => {
           process.nextTick(() => {
-            query.handleError(err, this.connection);
+            query.handleError(err2, this.connection);
           });
         };
         const activeQuery = this._getActiveQuery();
@@ -37262,9 +37262,9 @@ var require_client = __commonJS({
         const con = this.connection;
         this._connectionCallback = callback;
         if (this._connecting || this._connected) {
-          const err = new Error("Client has already been connected. You cannot reuse a client.");
+          const err2 = new Error("Client has already been connected. You cannot reuse a client.");
           process.nextTick(() => {
-            callback(err);
+            callback(err2);
           });
           return;
         }
@@ -37365,8 +37365,8 @@ var require_client = __commonJS({
               this.connectionParameters.password = this.password = null;
             }
             cb();
-          }).catch((err) => {
-            con.emit("error", err);
+          }).catch((err2) => {
+            con.emit("error", err2);
           });
         } else if (this.password !== null) {
           cb();
@@ -37405,8 +37405,8 @@ var require_client = __commonJS({
           try {
             this.saslSession = sasl.startSession(msg.mechanisms, this.enableChannelBinding && this.connection.stream);
             this.connection.sendSASLInitialResponseMessage(this.saslSession.mechanism, this.saslSession.response);
-          } catch (err) {
-            this.connection.emit("error", err);
+          } catch (err2) {
+            this.connection.emit("error", err2);
           }
         });
       }
@@ -37419,16 +37419,16 @@ var require_client = __commonJS({
             this.enableChannelBinding && this.connection.stream
           );
           this.connection.sendSCRAMClientFinalMessage(this.saslSession.response);
-        } catch (err) {
-          this.connection.emit("error", err);
+        } catch (err2) {
+          this.connection.emit("error", err2);
         }
       }
       _handleAuthSASLFinal(msg) {
         try {
           sasl.finalizeSession(this.saslSession, msg.data);
           this.saslSession = null;
-        } catch (err) {
-          this.connection.emit("error", err);
+        } catch (err2) {
+          this.connection.emit("error", err2);
         }
       }
       _handleBackendKeyData(msg) {
@@ -37456,27 +37456,27 @@ var require_client = __commonJS({
       }
       // if we receive an error event or error message
       // during the connection process we handle it here
-      _handleErrorWhileConnecting(err) {
+      _handleErrorWhileConnecting(err2) {
         if (this._connectionError) {
           return;
         }
         this._connectionError = true;
         clearTimeout(this.connectionTimeoutHandle);
         if (this._connectionCallback) {
-          return this._connectionCallback(err);
+          return this._connectionCallback(err2);
         }
-        this.emit("error", err);
+        this.emit("error", err2);
       }
       // if we're connected and we receive an error event from the connection
       // this means the socket is dead - do a hard abort of all queries and emit
       // the socket error on the client as well
-      _handleErrorEvent(err) {
+      _handleErrorEvent(err2) {
         if (this._connecting) {
-          return this._handleErrorWhileConnecting(err);
+          return this._handleErrorWhileConnecting(err2);
         }
         this._queryable = false;
-        this._errorAllQueries(err);
-        this.emit("error", err);
+        this._errorAllQueries(err2);
+        this.emit("error", err2);
       }
       // handle error messages from the postgres backend
       _handleErrorMessage(msg) {
@@ -37672,10 +37672,10 @@ var require_client = __commonJS({
           query = new Query2(config2, values, callback);
           if (!query.callback) {
             result = new this._Promise((resolve, reject) => {
-              query.callback = (err, res) => err ? reject(err) : resolve(res);
-            }).catch((err) => {
-              Error.captureStackTrace(err);
-              throw err;
+              query.callback = (err2, res) => err2 ? reject(err2) : resolve(res);
+            }).catch((err2) => {
+              Error.captureStackTrace(err2);
+              throw err2;
             });
           }
         }
@@ -37696,9 +37696,9 @@ var require_client = __commonJS({
             }
             this._pulseQueryQueue();
           }, readTimeout);
-          query.callback = (err, res) => {
+          query.callback = (err2, res) => {
             clearTimeout(readTimeoutTimer);
-            queryCallback(err, res);
+            queryCallback(err2, res);
           };
         }
         if (this.binary && !query.binary) {
@@ -37796,27 +37796,27 @@ var require_pg_pool = __commonJS({
       }
       let rej;
       let res;
-      const cb = function(err, client) {
-        err ? rej(err) : res(client);
+      const cb = function(err2, client) {
+        err2 ? rej(err2) : res(client);
       };
       const result = new Promise2(function(resolve, reject) {
         res = resolve;
         rej = reject;
-      }).catch((err) => {
-        Error.captureStackTrace(err);
-        throw err;
+      }).catch((err2) => {
+        Error.captureStackTrace(err2);
+        throw err2;
       });
       return { callback: cb, result };
     }
     function makeIdleListener(pool2, client) {
-      return function idleListener(err) {
-        err.client = client;
+      return function idleListener(err2) {
+        err2.client = client;
         client.removeListener("error", idleListener);
         client.on("error", () => {
-          pool2.log("additional client error after disconnection due to error", err);
+          pool2.log("additional client error after disconnection due to error", err2);
         });
         pool2._remove(client);
-        pool2.emit("error", err, client);
+        pool2.emit("error", err2, client);
       };
     }
     var Pool4 = class extends EventEmitter {
@@ -37925,8 +37925,8 @@ var require_pg_pool = __commonJS({
       }
       connect(cb) {
         if (this.ending) {
-          const err = new Error("Cannot use a pool after calling end on the pool");
-          return cb ? cb(err) : this.Promise.reject(err);
+          const err2 = new Error("Cannot use a pool after calling end on the pool");
+          return cb ? cb(err2) : this.Promise.reject(err2);
         }
         const response = promisify2(this.Promise, cb);
         const result = response.result;
@@ -37938,9 +37938,9 @@ var require_pg_pool = __commonJS({
             this._pendingQueue.push(new PendingItem(response.callback));
             return result;
           }
-          const queueCallback = (err, res, done) => {
+          const queueCallback = (err2, res, done) => {
             clearTimeout(tid);
-            response.callback(err, res, done);
+            response.callback(err2, res, done);
           };
           const pendingItem = new PendingItem(queueCallback);
           const tid = setTimeout(() => {
@@ -37978,20 +37978,20 @@ var require_pg_pool = __commonJS({
           }, this.options.connectionTimeoutMillis);
         }
         this.log("connecting new client");
-        client.connect((err) => {
+        client.connect((err2) => {
           if (tid) {
             clearTimeout(tid);
           }
           client.on("error", idleListener);
-          if (err) {
-            this.log("client failed to connect", err);
+          if (err2) {
+            this.log("client failed to connect", err2);
             this._clients = this._clients.filter((c) => c !== client);
             if (timeoutHit) {
-              err = new Error("Connection terminated due to connection timeout", { cause: err });
+              err2 = new Error("Connection terminated due to connection timeout", { cause: err2 });
             }
             this._pulseQueue();
             if (!pendingItem.timedOut) {
-              pendingItem.callback(err, void 0, NOOP);
+              pendingItem.callback(err2, void 0, NOOP);
             }
           } else {
             this.log("new client connected");
@@ -38025,7 +38025,7 @@ var require_pg_pool = __commonJS({
             if (idleIndex !== -1) {
               this._acquireClient(
                 client,
-                new PendingItem((err, client2, clientRelease) => clientRelease()),
+                new PendingItem((err2, client2, clientRelease) => clientRelease()),
                 idleListener,
                 false
               );
@@ -38046,10 +38046,10 @@ var require_pg_pool = __commonJS({
         client.removeListener("error", idleListener);
         if (!pendingItem.timedOut) {
           if (isNew && this.options.verify) {
-            this.options.verify(client, (err) => {
-              if (err) {
-                client.release(err);
-                return pendingItem.callback(err, void 0, NOOP);
+            this.options.verify(client, (err2) => {
+              if (err2) {
+                client.release(err2);
+                return pendingItem.callback(err2, void 0, NOOP);
               }
               pendingItem.callback(void 0, client, client.release);
             });
@@ -38067,21 +38067,21 @@ var require_pg_pool = __commonJS({
       // returns a function that wraps _release and throws if called more than once
       _releaseOnce(client, idleListener) {
         let released = false;
-        return (err) => {
+        return (err2) => {
           if (released) {
             throwOnDoubleRelease();
           }
           released = true;
-          this._release(client, idleListener, err);
+          this._release(client, idleListener, err2);
         };
       }
       // release a client back to the poll, include an error
       // to remove it from the pool
-      _release(client, idleListener, err) {
+      _release(client, idleListener, err2) {
         client.on("error", idleListener);
         client._poolUseCount = (client._poolUseCount || 0) + 1;
-        this.emit("release", err, client);
-        if (err || this.ending || !client._queryable || client._ending || client._poolUseCount >= this.options.maxUses) {
+        this.emit("release", err2, client);
+        if (err2 || this.ending || !client._queryable || client._ending || client._poolUseCount >= this.options.maxUses) {
           if (client._poolUseCount >= this.options.maxUses) {
             this.log("remove expended client");
           }
@@ -38125,38 +38125,38 @@ var require_pg_pool = __commonJS({
         }
         const response = promisify2(this.Promise, cb);
         cb = response.callback;
-        this.connect((err, client) => {
-          if (err) {
-            return cb(err);
+        this.connect((err2, client) => {
+          if (err2) {
+            return cb(err2);
           }
           let clientReleased = false;
-          const onError = (err2) => {
+          const onError = (err3) => {
             if (clientReleased) {
               return;
             }
             clientReleased = true;
-            client.release(err2);
-            cb(err2);
+            client.release(err3);
+            cb(err3);
           };
           client.once("error", onError);
           this.log("dispatching query");
           try {
-            client.query(text2, values, (err2, res) => {
+            client.query(text2, values, (err3, res) => {
               this.log("query dispatched");
               client.removeListener("error", onError);
               if (clientReleased) {
                 return;
               }
               clientReleased = true;
-              client.release(err2);
-              if (err2) {
-                return cb(err2);
+              client.release(err3);
+              if (err3) {
+                return cb(err3);
               }
               return cb(void 0, res);
             });
-          } catch (err2) {
-            client.release(err2);
-            return cb(err2);
+          } catch (err3) {
+            client.release(err3);
+            return cb(err3);
           }
         });
         return response.result;
@@ -38164,8 +38164,8 @@ var require_pg_pool = __commonJS({
       end(cb) {
         this.log("ending");
         if (this.ending) {
-          const err = new Error("Called end on pool more than once");
-          return cb ? cb(err) : this.Promise.reject(err);
+          const err2 = new Error("Called end on pool more than once");
+          return cb ? cb(err2) : this.Promise.reject(err2);
         }
         this.ending = true;
         const promised = promisify2(this.Promise, cb);
@@ -38230,18 +38230,18 @@ var require_query2 = __commonJS({
       sourceLine: "line",
       sourceFunction: "routine"
     };
-    NativeQuery.prototype.handleError = function(err) {
+    NativeQuery.prototype.handleError = function(err2) {
       const fields = this.native.pq.resultErrorFields();
       if (fields) {
         for (const key in fields) {
           const normalizedFieldName = errorFieldMap[key] || key;
-          err[normalizedFieldName] = fields[key];
+          err2[normalizedFieldName] = fields[key];
         }
       }
       if (this.callback) {
-        this.callback(err);
+        this.callback(err2);
       } else {
-        this.emit("error", err);
+        this.emit("error", err2);
       }
       this.state = "error";
     };
@@ -38266,13 +38266,13 @@ var require_query2 = __commonJS({
       const self2 = this;
       this.native = client.native;
       client.native.arrayMode = this._arrayMode;
-      let after = function(err, rows, results) {
+      let after = function(err2, rows, results) {
         client.native.arrayMode = false;
         setImmediate(function() {
           self2.emit("_done");
         });
-        if (err) {
-          return self2.handleError(err);
+        if (err2) {
+          return self2.handleError(err2);
         }
         if (self2._emitRowEvents) {
           if (results.length > 1) {
@@ -38305,20 +38305,20 @@ var require_query2 = __commonJS({
         const values = (this.values || []).map(utils.prepareValue);
         if (client.namedQueries[this.name]) {
           if (this.text && client.namedQueries[this.name] !== this.text) {
-            const err = new Error(`Prepared statements must be unique - '${this.name}' was used for a different statement`);
-            return after(err);
+            const err2 = new Error(`Prepared statements must be unique - '${this.name}' was used for a different statement`);
+            return after(err2);
           }
           return client.native.execute(this.name, values, after);
         }
-        return client.native.prepare(this.name, this.text, values.length, function(err) {
-          if (err) return after(err);
+        return client.native.prepare(this.name, this.text, values.length, function(err2) {
+          if (err2) return after(err2);
           client.namedQueries[self2.name] = self2.text;
           return self2.native.execute(self2.name, values, after);
         });
       } else if (this.values) {
         if (!Array.isArray(this.values)) {
-          const err = new Error("Query values must be an array");
-          return after(err);
+          const err2 = new Error("Query values must be an array");
+          return after(err2);
         }
         const vals = this.values.map(utils.prepareValue);
         client.native.query(this.text, vals, after);
@@ -38380,11 +38380,11 @@ var require_client2 = __commonJS({
     };
     Client2.Query = NativeQuery;
     util2.inherits(Client2, EventEmitter);
-    Client2.prototype._errorAllQueries = function(err) {
+    Client2.prototype._errorAllQueries = function(err2) {
       const enqueueError = (query) => {
         process.nextTick(() => {
           query.native = this.native;
-          query.handleError(err);
+          query.handleError(err2);
         });
       };
       if (this._hasActiveQuery()) {
@@ -38401,19 +38401,19 @@ var require_client2 = __commonJS({
         return;
       }
       this._connecting = true;
-      this.connectionParameters.getLibpqConnectionString(function(err, conString) {
+      this.connectionParameters.getLibpqConnectionString(function(err2, conString) {
         if (self2.connectionParameters.nativeConnectionString) conString = self2.connectionParameters.nativeConnectionString;
-        if (err) return cb(err);
-        self2.native.connect(conString, function(err2) {
-          if (err2) {
+        if (err2) return cb(err2);
+        self2.native.connect(conString, function(err3) {
+          if (err3) {
             self2.native.end();
-            return cb(err2);
+            return cb(err3);
           }
           self2._connected = true;
-          self2.native.on("error", function(err3) {
+          self2.native.on("error", function(err4) {
             self2._queryable = false;
-            self2._errorAllQueries(err3);
-            self2.emit("error", err3);
+            self2._errorAllQueries(err4);
+            self2.emit("error", err4);
           });
           self2.native.on("notification", function(msg) {
             self2.emit("notification", {
@@ -38464,11 +38464,11 @@ var require_client2 = __commonJS({
           result = new this._Promise((resolve, reject) => {
             resolveOut = resolve;
             rejectOut = reject;
-          }).catch((err) => {
-            Error.captureStackTrace(err);
-            throw err;
+          }).catch((err2) => {
+            Error.captureStackTrace(err2);
+            throw err2;
           });
-          query.callback = (err, res) => err ? rejectOut(err) : resolveOut(res);
+          query.callback = (err2, res) => err2 ? rejectOut(err2) : resolveOut(res);
         }
       }
       if (readTimeout) {
@@ -38488,9 +38488,9 @@ var require_client2 = __commonJS({
           }
           this._pulseQueryQueue();
         }, readTimeout);
-        query.callback = (err, res) => {
+        query.callback = (err2, res) => {
           clearTimeout(readTimeoutTimer);
-          queryCallback(err, res);
+          queryCallback(err2, res);
         };
       }
       if (!this._queryable) {
@@ -38523,7 +38523,7 @@ var require_client2 = __commonJS({
       let result;
       if (!cb) {
         result = new this._Promise(function(resolve, reject) {
-          cb = (err) => err ? reject(err) : resolve();
+          cb = (err2) => err2 ? reject(err2) : resolve();
         });
       }
       this.native.end(function() {
@@ -38644,9 +38644,9 @@ var require_lib5 = __commonJS({
         let native = null;
         try {
           native = new PG(require_native());
-        } catch (err) {
-          if (err.code !== "MODULE_NOT_FOUND") {
-            throw err;
+        } catch (err2) {
+          if (err2.code !== "MODULE_NOT_FOUND") {
+            throw err2;
           }
         }
         Object.defineProperty(module.exports, "native", {
@@ -42510,17 +42510,17 @@ function exists(subquery) {
 function notExists(subquery) {
   return sql`not exists ${subquery}`;
 }
-function between(column, min, max) {
+function between(column, min, max2) {
   return sql`${column} between ${bindIfParam(min, column)} and ${bindIfParam(
-    max,
+    max2,
     column
   )}`;
 }
-function notBetween(column, min, max) {
+function notBetween(column, min, max2) {
   return sql`${column} not between ${bindIfParam(
     min,
     column
-  )} and ${bindIfParam(max, column)}`;
+  )} and ${bindIfParam(max2, column)}`;
 }
 function like(column, value) {
   return sql`${column} like ${value}`;
@@ -46943,9 +46943,9 @@ var init_session2 = __esm({
           const result = await transaction(tx);
           await tx.execute(sql.raw(`release savepoint ${savepointName}`));
           return result;
-        } catch (err) {
+        } catch (err2) {
           await tx.execute(sql.raw(`rollback to savepoint ${savepointName}`));
-          throw err;
+          throw err2;
         }
       }
     };
@@ -47049,12 +47049,12 @@ var init_node_postgres = __esm({
 // @__NO_SIDE_EFFECTS__
 function $constructor(name, initializer3, params) {
   function init(inst, def) {
-    var _a;
+    var _a2;
     Object.defineProperty(inst, "_zod", {
       value: inst._zod ?? {},
       enumerable: false
     });
-    (_a = inst._zod).traits ?? (_a.traits = /* @__PURE__ */ new Set());
+    (_a2 = inst._zod).traits ?? (_a2.traits = /* @__PURE__ */ new Set());
     inst._zod.traits.add(name);
     initializer3(inst, def);
     for (const k in _.prototype) {
@@ -47069,10 +47069,10 @@ function $constructor(name, initializer3, params) {
   }
   Object.defineProperty(Definition, "name", { value: name });
   function _(def) {
-    var _a;
+    var _a2;
     const inst = params?.Parent ? new Definition() : this;
     init(inst, def);
-    (_a = inst._zod).deferred ?? (_a.deferred = []);
+    (_a2 = inst._zod).deferred ?? (_a2.deferred = []);
     for (const fn of inst._zod.deferred) {
       fn();
     }
@@ -47500,8 +47500,8 @@ function aborted(x, startIndex = 0) {
 }
 function prefixIssues(path10, issues) {
   return issues.map((iss) => {
-    var _a;
-    (_a = iss).path ?? (_a.path = []);
+    var _a2;
+    (_a2 = iss).path ?? (_a2.path = []);
     iss.path.unshift(path10);
     return iss;
   });
@@ -47692,7 +47692,7 @@ function treeifyError(error40, _mapper) {
   };
   const result = { errors: [] };
   const processError = (error41, path10 = []) => {
-    var _a, _b;
+    var _a2, _b2;
     for (const issue2 of error41.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
         issue2.errors.map((issues) => processError({ issues }, issue2.path));
@@ -47713,11 +47713,11 @@ function treeifyError(error40, _mapper) {
           const terminal = i === fullpath.length - 1;
           if (typeof el === "string") {
             curr.properties ?? (curr.properties = {});
-            (_a = curr.properties)[el] ?? (_a[el] = { errors: [] });
+            (_a2 = curr.properties)[el] ?? (_a2[el] = { errors: [] });
             curr = curr.properties[el];
           } else {
             curr.items ?? (curr.items = []);
-            (_b = curr.items)[el] ?? (_b[el] = { errors: [] });
+            (_b2 = curr.items)[el] ?? (_b2[el] = { errors: [] });
             curr = curr.items[el];
           }
           if (terminal) {
@@ -47981,10 +47981,10 @@ var init_checks2 = __esm({
     init_regexes();
     init_util2();
     $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
-      var _a;
+      var _a2;
       inst._zod ?? (inst._zod = {});
       inst._zod.def = def;
-      (_a = inst._zod).onattach ?? (_a.onattach = []);
+      (_a2 = inst._zod).onattach ?? (_a2.onattach = []);
     });
     numericOriginMap = {
       number: "number",
@@ -48050,8 +48050,8 @@ var init_checks2 = __esm({
     $ZodCheckMultipleOf = /* @__PURE__ */ $constructor("$ZodCheckMultipleOf", (inst, def) => {
       $ZodCheck.init(inst, def);
       inst._zod.onattach.push((inst2) => {
-        var _a;
-        (_a = inst2._zod.bag).multipleOf ?? (_a.multipleOf = def.value);
+        var _a2;
+        (_a2 = inst2._zod.bag).multipleOf ?? (_a2.multipleOf = def.value);
       });
       inst._zod.check = (payload) => {
         if (typeof payload.value !== typeof def.value)
@@ -48177,9 +48177,9 @@ var init_checks2 = __esm({
       };
     });
     $ZodCheckMaxSize = /* @__PURE__ */ $constructor("$ZodCheckMaxSize", (inst, def) => {
-      var _a;
+      var _a2;
       $ZodCheck.init(inst, def);
-      (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+      (_a2 = inst._zod.def).when ?? (_a2.when = (payload) => {
         const val = payload.value;
         return !nullish(val) && val.size !== void 0;
       });
@@ -48204,9 +48204,9 @@ var init_checks2 = __esm({
       };
     });
     $ZodCheckMinSize = /* @__PURE__ */ $constructor("$ZodCheckMinSize", (inst, def) => {
-      var _a;
+      var _a2;
       $ZodCheck.init(inst, def);
-      (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+      (_a2 = inst._zod.def).when ?? (_a2.when = (payload) => {
         const val = payload.value;
         return !nullish(val) && val.size !== void 0;
       });
@@ -48231,9 +48231,9 @@ var init_checks2 = __esm({
       };
     });
     $ZodCheckSizeEquals = /* @__PURE__ */ $constructor("$ZodCheckSizeEquals", (inst, def) => {
-      var _a;
+      var _a2;
       $ZodCheck.init(inst, def);
-      (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+      (_a2 = inst._zod.def).when ?? (_a2.when = (payload) => {
         const val = payload.value;
         return !nullish(val) && val.size !== void 0;
       });
@@ -48261,9 +48261,9 @@ var init_checks2 = __esm({
       };
     });
     $ZodCheckMaxLength = /* @__PURE__ */ $constructor("$ZodCheckMaxLength", (inst, def) => {
-      var _a;
+      var _a2;
       $ZodCheck.init(inst, def);
-      (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+      (_a2 = inst._zod.def).when ?? (_a2.when = (payload) => {
         const val = payload.value;
         return !nullish(val) && val.length !== void 0;
       });
@@ -48290,9 +48290,9 @@ var init_checks2 = __esm({
       };
     });
     $ZodCheckMinLength = /* @__PURE__ */ $constructor("$ZodCheckMinLength", (inst, def) => {
-      var _a;
+      var _a2;
       $ZodCheck.init(inst, def);
-      (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+      (_a2 = inst._zod.def).when ?? (_a2.when = (payload) => {
         const val = payload.value;
         return !nullish(val) && val.length !== void 0;
       });
@@ -48319,9 +48319,9 @@ var init_checks2 = __esm({
       };
     });
     $ZodCheckLengthEquals = /* @__PURE__ */ $constructor("$ZodCheckLengthEquals", (inst, def) => {
-      var _a;
+      var _a2;
       $ZodCheck.init(inst, def);
-      (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+      (_a2 = inst._zod.def).when ?? (_a2.when = (payload) => {
         const val = payload.value;
         return !nullish(val) && val.length !== void 0;
       });
@@ -48350,7 +48350,7 @@ var init_checks2 = __esm({
       };
     });
     $ZodCheckStringFormat = /* @__PURE__ */ $constructor("$ZodCheckStringFormat", (inst, def) => {
-      var _a, _b;
+      var _a2, _b2;
       $ZodCheck.init(inst, def);
       inst._zod.onattach.push((inst2) => {
         const bag = inst2._zod.bag;
@@ -48361,7 +48361,7 @@ var init_checks2 = __esm({
         }
       });
       if (def.pattern)
-        (_a = inst._zod).check ?? (_a.check = (payload) => {
+        (_a2 = inst._zod).check ?? (_a2.check = (payload) => {
           def.pattern.lastIndex = 0;
           if (def.pattern.test(payload.value))
             return;
@@ -48376,7 +48376,7 @@ var init_checks2 = __esm({
           });
         });
       else
-        (_b = inst._zod).check ?? (_b.check = () => {
+        (_b2 = inst._zod).check ?? (_b2.check = () => {
         });
     });
     $ZodCheckRegex = /* @__PURE__ */ $constructor("$ZodCheckRegex", (inst, def) => {
@@ -48810,7 +48810,7 @@ var init_schemas = __esm({
     init_versions();
     init_util2();
     $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
-      var _a;
+      var _a2;
       inst ?? (inst = {});
       inst._zod.def = def;
       inst._zod.bag = inst._zod.bag || {};
@@ -48825,7 +48825,7 @@ var init_schemas = __esm({
         }
       }
       if (checks.length === 0) {
-        (_a = inst._zod).deferred ?? (_a.deferred = []);
+        (_a2 = inst._zod).deferred ?? (_a2.deferred = []);
         inst._zod.deferred?.push(() => {
           inst._zod.run = inst._zod.parse;
         });
@@ -56399,7 +56399,7 @@ var init_to_json_schema = __esm({
         this.seen = /* @__PURE__ */ new Map();
       }
       process(schema, _params = { path: [], schemaPath: [] }) {
-        var _a;
+        var _a2;
         const def = schema._zod.def;
         const formatMap = {
           guid: "uuid",
@@ -56861,7 +56861,7 @@ var init_to_json_schema = __esm({
           delete result.schema.default;
         }
         if (this.io === "input" && result.schema._prefault)
-          (_a = result.schema).default ?? (_a.default = result.schema._prefault);
+          (_a2 = result.schema).default ?? (_a2.default = result.schema._prefault);
         delete result.schema._prefault;
         const _result = this.seen.get(schema);
         return _result.schema;
@@ -58741,11 +58741,11 @@ function columnToSchema(column, factory) {
 function numberColumnToSchema(column, z, coerce2) {
   let unsigned = column.getSQLType().includes("unsigned");
   let min;
-  let max;
+  let max2;
   let integer3 = false;
   if (isColumnType(column, ["MySqlTinyInt", "SingleStoreTinyInt"])) {
     min = unsigned ? 0 : CONSTANTS.INT8_MIN;
-    max = unsigned ? CONSTANTS.INT8_UNSIGNED_MAX : CONSTANTS.INT8_MAX;
+    max2 = unsigned ? CONSTANTS.INT8_UNSIGNED_MAX : CONSTANTS.INT8_MAX;
     integer3 = true;
   } else if (isColumnType(column, [
     "PgSmallInt",
@@ -58754,7 +58754,7 @@ function numberColumnToSchema(column, z, coerce2) {
     "SingleStoreSmallInt"
   ])) {
     min = unsigned ? 0 : CONSTANTS.INT16_MIN;
-    max = unsigned ? CONSTANTS.INT16_UNSIGNED_MAX : CONSTANTS.INT16_MAX;
+    max2 = unsigned ? CONSTANTS.INT16_UNSIGNED_MAX : CONSTANTS.INT16_MAX;
     integer3 = true;
   } else if (isColumnType(column, [
     "PgReal",
@@ -58764,7 +58764,7 @@ function numberColumnToSchema(column, z, coerce2) {
     "SingleStoreFloat"
   ])) {
     min = unsigned ? 0 : CONSTANTS.INT24_MIN;
-    max = unsigned ? CONSTANTS.INT24_UNSIGNED_MAX : CONSTANTS.INT24_MAX;
+    max2 = unsigned ? CONSTANTS.INT24_UNSIGNED_MAX : CONSTANTS.INT24_MAX;
     integer3 = isColumnType(column, ["MySqlMediumInt", "SingleStoreMediumInt"]);
   } else if (isColumnType(column, [
     "PgInteger",
@@ -58773,7 +58773,7 @@ function numberColumnToSchema(column, z, coerce2) {
     "SingleStoreInt"
   ])) {
     min = unsigned ? 0 : CONSTANTS.INT32_MIN;
-    max = unsigned ? CONSTANTS.INT32_UNSIGNED_MAX : CONSTANTS.INT32_MAX;
+    max2 = unsigned ? CONSTANTS.INT32_UNSIGNED_MAX : CONSTANTS.INT32_MAX;
     integer3 = true;
   } else if (isColumnType(column, [
     "PgDoublePrecision",
@@ -58784,7 +58784,7 @@ function numberColumnToSchema(column, z, coerce2) {
     "SQLiteReal"
   ])) {
     min = unsigned ? 0 : CONSTANTS.INT48_MIN;
-    max = unsigned ? CONSTANTS.INT48_UNSIGNED_MAX : CONSTANTS.INT48_MAX;
+    max2 = unsigned ? CONSTANTS.INT48_UNSIGNED_MAX : CONSTANTS.INT48_MAX;
   } else if (isColumnType(column, [
     "PgBigInt53",
     "PgBigSerial53",
@@ -58796,47 +58796,47 @@ function numberColumnToSchema(column, z, coerce2) {
   ])) {
     unsigned = unsigned || isColumnType(column, ["MySqlSerial", "SingleStoreSerial"]);
     min = unsigned ? 0 : Number.MIN_SAFE_INTEGER;
-    max = Number.MAX_SAFE_INTEGER;
+    max2 = Number.MAX_SAFE_INTEGER;
     integer3 = true;
   } else if (isColumnType(column, ["MySqlYear", "SingleStoreYear"])) {
     min = 1901;
-    max = 2155;
+    max2 = 2155;
     integer3 = true;
   } else {
     min = Number.MIN_SAFE_INTEGER;
-    max = Number.MAX_SAFE_INTEGER;
+    max2 = Number.MAX_SAFE_INTEGER;
   }
   let schema = coerce2 === true || coerce2?.number ? integer3 ? z.coerce.number() : z.coerce.number().int() : integer3 ? z.int() : z.number();
-  schema = schema.gte(min).lte(max);
+  schema = schema.gte(min).lte(max2);
   return schema;
 }
 function bigintColumnToSchema(column, z, coerce2) {
   const unsigned = column.getSQLType().includes("unsigned");
   const min = unsigned ? 0n : CONSTANTS.INT64_MIN;
-  const max = unsigned ? CONSTANTS.INT64_UNSIGNED_MAX : CONSTANTS.INT64_MAX;
+  const max2 = unsigned ? CONSTANTS.INT64_UNSIGNED_MAX : CONSTANTS.INT64_MAX;
   const schema = coerce2 === true || coerce2?.bigint ? z.coerce.bigint() : z.bigint();
-  return schema.gte(min).lte(max);
+  return schema.gte(min).lte(max2);
 }
 function stringColumnToSchema(column, z, coerce2) {
   if (isColumnType(column, ["PgUUID"])) {
     return z.uuid();
   }
-  let max;
+  let max2;
   let regex;
   let fixed = false;
   if (isColumnType(column, ["PgVarchar", "SQLiteText"])) {
-    max = column.length;
+    max2 = column.length;
   } else if (isColumnType(column, ["MySqlVarChar", "SingleStoreVarChar"])) {
-    max = column.length ?? CONSTANTS.INT16_UNSIGNED_MAX;
+    max2 = column.length ?? CONSTANTS.INT16_UNSIGNED_MAX;
   } else if (isColumnType(column, ["MySqlText", "SingleStoreText"])) {
     if (column.textType === "longtext") {
-      max = CONSTANTS.INT32_UNSIGNED_MAX;
+      max2 = CONSTANTS.INT32_UNSIGNED_MAX;
     } else if (column.textType === "mediumtext") {
-      max = CONSTANTS.INT24_UNSIGNED_MAX;
+      max2 = CONSTANTS.INT24_UNSIGNED_MAX;
     } else if (column.textType === "text") {
-      max = CONSTANTS.INT16_UNSIGNED_MAX;
+      max2 = CONSTANTS.INT16_UNSIGNED_MAX;
     } else {
-      max = CONSTANTS.INT8_UNSIGNED_MAX;
+      max2 = CONSTANTS.INT8_UNSIGNED_MAX;
     }
   }
   if (isColumnType(column, [
@@ -58844,16 +58844,16 @@ function stringColumnToSchema(column, z, coerce2) {
     "MySqlChar",
     "SingleStoreChar"
   ])) {
-    max = column.length;
+    max2 = column.length;
     fixed = true;
   }
   if (isColumnType(column, ["PgBinaryVector"])) {
     regex = /^[01]+$/;
-    max = column.dimensions;
+    max2 = column.dimensions;
   }
   let schema = coerce2 === true || coerce2?.string ? z.coerce.string() : z.string();
   schema = regex ? schema.regex(regex) : schema;
-  return max && fixed ? schema.length(max) : max ? schema.max(max) : schema;
+  return max2 && fixed ? schema.length(max2) : max2 ? schema.max(max2) : schema;
 }
 function getColumns(tableLike) {
   return isTable(tableLike) ? getTableColumns(tableLike) : getViewSelectedFields(tableLike);
@@ -68200,7 +68200,7 @@ var require_type_is2 = __commonJS({
       }
       try {
         return normalizeType(value);
-      } catch (err) {
+      } catch (err2) {
         return null;
       }
     }
@@ -70479,11 +70479,11 @@ var require_multipart = __commonJS({
       destroy: () => {
       }
     };
-    function callAndUnsetCb(self2, err) {
+    function callAndUnsetCb(self2, err2) {
       const cb = self2._writecb;
       self2._writecb = null;
-      if (err)
-        self2.destroy(err);
+      if (err2)
+        self2.destroy(err2);
       else if (cb)
         cb();
     }
@@ -70779,17 +70779,17 @@ var require_multipart = __commonJS({
         if (this._writecb)
           callAndUnsetCb(this);
       }
-      _destroy(err, cb) {
+      _destroy(err2, cb) {
         this._hparser = null;
         this._bparser = ignoreData;
-        if (!err)
-          err = checkEndState(this);
+        if (!err2)
+          err2 = checkEndState(this);
         const fileStream = this._fileStream;
         if (fileStream) {
           this._fileStream = null;
-          fileStream.destroy(err);
+          fileStream.destroy(err2);
         }
-        cb(err);
+        cb(err2);
       }
       _final(cb) {
         this._bparser.destroy();
@@ -70801,11 +70801,11 @@ var require_multipart = __commonJS({
           finalcb(this, cb);
       }
     };
-    function finalcb(self2, cb, err) {
-      if (err)
-        return cb(err);
-      err = checkEndState(self2);
-      cb(err);
+    function finalcb(self2, cb, err2) {
+      if (err2)
+        return cb(err2);
+      err2 = checkEndState(self2);
+      cb(err2);
     }
     function checkEndState(self2) {
       if (self2._hparser)
@@ -72223,11 +72223,11 @@ var require_remove_uploaded_files = __commonJS({
       if (length === 0) return cb(null, errors);
       function handleFile(idx) {
         var file2 = uploadedFiles[idx];
-        remove(file2, function(err) {
-          if (err) {
-            err.file = file2;
-            err.field = file2.fieldname;
-            errors.push(err);
+        remove(file2, function(err2) {
+          if (err2) {
+            err2.file = file2;
+            err2.field = file2.fieldname;
+            errors.push(err2);
           }
           if (idx < length - 1) {
             handleFile(idx + 1);
@@ -72266,8 +72266,8 @@ var require_make_middleware = __commonJS({
         var busboy;
         try {
           busboy = Busboy({ headers: req.headers, limits, preservePath });
-        } catch (err) {
-          return next(err);
+        } catch (err2) {
+          return next(err2);
         }
         var appender = new FileAppender(fileStrategy, req);
         var isDone = false;
@@ -72275,14 +72275,14 @@ var require_make_middleware = __commonJS({
         var errorOccured = false;
         var pendingWrites = new Counter();
         var uploadedFiles = [];
-        function done(err) {
+        function done(err2) {
           if (isDone) return;
           isDone = true;
           req.unpipe(busboy);
           process.nextTick(() => {
             busboy.removeAllListeners();
           });
-          next(err);
+          next(err2);
         }
         function indicateDone() {
           if (readFinished && pendingWrites.isZero() && !errorOccured) done();
@@ -72294,8 +72294,8 @@ var require_make_middleware = __commonJS({
             function remove(file2, cb) {
               storage._removeFile(req, file2, cb);
             }
-            removeUploadedFiles(uploadedFiles, remove, function(err, storageErrors) {
-              if (err) return done(err);
+            removeUploadedFiles(uploadedFiles, remove, function(err2, storageErrors) {
+              if (err2) return done(err2);
               uploadError.storageErrors = storageErrors;
               done(uploadError);
             });
@@ -72325,10 +72325,10 @@ var require_make_middleware = __commonJS({
             mimetype: mimeType
           };
           var placeholder = appender.insertPlaceholder(file2);
-          fileFilter(req, file2, function(err, includeFile) {
-            if (err) {
+          fileFilter(req, file2, function(err2, includeFile) {
+            if (err2) {
               appender.removePlaceholder(placeholder);
-              return abortWithError(err);
+              return abortWithError(err2);
             }
             if (!includeFile) {
               appender.removePlaceholder(placeholder);
@@ -72341,24 +72341,24 @@ var require_make_middleware = __commonJS({
               enumerable: false,
               value: fileStream
             });
-            fileStream.on("error", function(err2) {
+            fileStream.on("error", function(err3) {
               pendingWrites.decrement();
-              abortWithError(err2);
+              abortWithError(err3);
             });
             fileStream.on("limit", function() {
               aborting = true;
               abortWithCode("LIMIT_FILE_SIZE", fieldname);
             });
-            storage._handleFile(req, file2, function(err2, info) {
+            storage._handleFile(req, file2, function(err3, info) {
               if (aborting) {
                 appender.removePlaceholder(placeholder);
                 uploadedFiles.push(extend2(file2, info));
                 return pendingWrites.decrement();
               }
-              if (err2) {
+              if (err3) {
                 appender.removePlaceholder(placeholder);
                 pendingWrites.decrement();
-                return abortWithError(err2);
+                return abortWithError(err3);
               }
               var fileInfo = extend2(file2, info);
               appender.replacePlaceholder(placeholder, fileInfo);
@@ -72368,8 +72368,8 @@ var require_make_middleware = __commonJS({
             });
           });
         });
-        busboy.on("error", function(err) {
-          abortWithError(err);
+        busboy.on("error", function(err2) {
+          abortWithError(err2);
         });
         busboy.on("partsLimit", function() {
           abortWithCode("LIMIT_PART_COUNT");
@@ -72488,8 +72488,8 @@ var require_disk = __commonJS({
     var crypto3 = __require("crypto");
     var mkdirp = require_mkdirp();
     function getFilename(req, file2, cb) {
-      crypto3.randomBytes(16, function(err, raw) {
-        cb(err, err ? void 0 : raw.toString("hex"));
+      crypto3.randomBytes(16, function(err2, raw) {
+        cb(err2, err2 ? void 0 : raw.toString("hex"));
       });
     }
     function getDestination(req, file2, cb) {
@@ -72508,10 +72508,10 @@ var require_disk = __commonJS({
     }
     DiskStorage.prototype._handleFile = function _handleFile(req, file2, cb) {
       var that = this;
-      that.getDestination(req, file2, function(err, destination) {
-        if (err) return cb(err);
-        that.getFilename(req, file2, function(err2, filename) {
-          if (err2) return cb(err2);
+      that.getDestination(req, file2, function(err2, destination) {
+        if (err2) return cb(err2);
+        that.getFilename(req, file2, function(err3, filename) {
+          if (err3) return cb(err3);
           var finalPath = path10.join(destination, filename);
           var outStream = fs2.createWriteStream(finalPath);
           file2.stream.pipe(outStream);
@@ -72812,19 +72812,19 @@ var require_destroy = __commonJS({
   "../../node_modules/.pnpm/readable-stream@2.3.8/node_modules/readable-stream/lib/internal/streams/destroy.js"(exports, module) {
     "use strict";
     var pna = require_process_nextick_args();
-    function destroy(err, cb) {
+    function destroy(err2, cb) {
       var _this = this;
       var readableDestroyed = this._readableState && this._readableState.destroyed;
       var writableDestroyed = this._writableState && this._writableState.destroyed;
       if (readableDestroyed || writableDestroyed) {
         if (cb) {
-          cb(err);
-        } else if (err) {
+          cb(err2);
+        } else if (err2) {
           if (!this._writableState) {
-            pna.nextTick(emitErrorNT, this, err);
+            pna.nextTick(emitErrorNT, this, err2);
           } else if (!this._writableState.errorEmitted) {
             this._writableState.errorEmitted = true;
-            pna.nextTick(emitErrorNT, this, err);
+            pna.nextTick(emitErrorNT, this, err2);
           }
         }
         return this;
@@ -72835,16 +72835,16 @@ var require_destroy = __commonJS({
       if (this._writableState) {
         this._writableState.destroyed = true;
       }
-      this._destroy(err || null, function(err2) {
-        if (!cb && err2) {
+      this._destroy(err2 || null, function(err3) {
+        if (!cb && err3) {
           if (!_this._writableState) {
-            pna.nextTick(emitErrorNT, _this, err2);
+            pna.nextTick(emitErrorNT, _this, err3);
           } else if (!_this._writableState.errorEmitted) {
             _this._writableState.errorEmitted = true;
-            pna.nextTick(emitErrorNT, _this, err2);
+            pna.nextTick(emitErrorNT, _this, err3);
           }
         } else if (cb) {
-          cb(err2);
+          cb(err3);
         }
       });
       return this;
@@ -72866,8 +72866,8 @@ var require_destroy = __commonJS({
         this._writableState.errorEmitted = false;
       }
     }
-    function emitErrorNT(self2, err) {
-      self2.emit("error", err);
+    function emitErrorNT(self2, err2) {
+      self2.emit("error", err2);
     }
     module.exports = {
       destroy,
@@ -73246,10 +73246,10 @@ var require_stream_writable = __commonJS({
       return state.ending && state.length === 0 && state.bufferedRequest === null && !state.finished && !state.writing;
     }
     function callFinal(stream, state) {
-      stream._final(function(err) {
+      stream._final(function(err2) {
         state.pendingcb--;
-        if (err) {
-          stream.emit("error", err);
+        if (err2) {
+          stream.emit("error", err2);
         }
         state.prefinished = true;
         stream.emit("prefinish");
@@ -73289,13 +73289,13 @@ var require_stream_writable = __commonJS({
       state.ended = true;
       stream.writable = false;
     }
-    function onCorkedFinish(corkReq, state, err) {
+    function onCorkedFinish(corkReq, state, err2) {
       var entry = corkReq.entry;
       corkReq.entry = null;
       while (entry) {
         var cb = entry.callback;
         state.pendingcb--;
-        cb(err);
+        cb(err2);
         entry = entry.next;
       }
       state.corkedRequestsFree.next = corkReq;
@@ -73316,9 +73316,9 @@ var require_stream_writable = __commonJS({
     });
     Writable.prototype.destroy = destroyImpl.destroy;
     Writable.prototype._undestroy = destroyImpl.undestroy;
-    Writable.prototype._destroy = function(err, cb) {
+    Writable.prototype._destroy = function(err2, cb) {
       this.end();
-      cb(err);
+      cb(err2);
     };
   }
 });
@@ -73392,10 +73392,10 @@ var require_stream_duplex = __commonJS({
         this._writableState.destroyed = value;
       }
     });
-    Duplex.prototype._destroy = function(err, cb) {
+    Duplex.prototype._destroy = function(err2, cb) {
       this.push(null);
       this.end();
-      pna.nextTick(cb, err);
+      pna.nextTick(cb, err2);
     };
   }
 });
@@ -73747,9 +73747,9 @@ var require_stream_readable = __commonJS({
     });
     Readable.prototype.destroy = destroyImpl.destroy;
     Readable.prototype._undestroy = destroyImpl.undestroy;
-    Readable.prototype._destroy = function(err, cb) {
+    Readable.prototype._destroy = function(err2, cb) {
       this.push(null);
-      cb(err);
+      cb(err2);
     };
     Readable.prototype.push = function(chunk, encoding) {
       var state = this._readableState;
@@ -74406,10 +74406,10 @@ var require_stream_transform = __commonJS({
         ts.needTransform = true;
       }
     };
-    Transform.prototype._destroy = function(err, cb) {
+    Transform.prototype._destroy = function(err2, cb) {
       var _this2 = this;
-      Duplex.prototype._destroy.call(this, err, function(err2) {
-        cb(err2);
+      Duplex.prototype._destroy.call(this, err2, function(err22) {
+        cb(err22);
         _this2.emit("close");
       });
     };
@@ -74623,12 +74623,12 @@ var require_typedarray = __commonJS({
         makeArrayAccessor(i);
       }
     }
-    function as_signed(value, bits) {
-      var s = 32 - bits;
+    function as_signed(value, bits2) {
+      var s = 32 - bits2;
       return value << s >> s;
     }
-    function as_unsigned(value, bits) {
-      var s = 32 - bits;
+    function as_unsigned(value, bits2) {
+      var s = 32 - bits2;
       return value << s >>> s;
     }
     function packI8(n) {
@@ -74672,7 +74672,7 @@ var require_typedarray = __commonJS({
       return as_unsigned(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3], 32);
     }
     function packIEEE754(v, ebits, fbits) {
-      var bias = (1 << ebits - 1) - 1, s, e, f, ln, i, bits, str, bytes;
+      var bias = (1 << ebits - 1) - 1, s, e, f, ln, i, bits2, str, bytes;
       function roundToEven(n) {
         var w = floor(n), f2 = n - w;
         if (f2 < 0.5)
@@ -74715,18 +74715,18 @@ var require_typedarray = __commonJS({
           f = roundToEven(v / pow(2, 1 - bias - fbits));
         }
       }
-      bits = [];
+      bits2 = [];
       for (i = fbits; i; i -= 1) {
-        bits.push(f % 2 ? 1 : 0);
+        bits2.push(f % 2 ? 1 : 0);
         f = floor(f / 2);
       }
       for (i = ebits; i; i -= 1) {
-        bits.push(e % 2 ? 1 : 0);
+        bits2.push(e % 2 ? 1 : 0);
         e = floor(e / 2);
       }
-      bits.push(s ? 1 : 0);
-      bits.reverse();
-      str = bits.join("");
+      bits2.push(s ? 1 : 0);
+      bits2.reverse();
+      str = bits2.join("");
       bytes = [];
       while (str.length) {
         bytes.push(parseInt(str.substring(0, 8), 2));
@@ -74735,16 +74735,16 @@ var require_typedarray = __commonJS({
       return bytes;
     }
     function unpackIEEE754(bytes, ebits, fbits) {
-      var bits = [], i, j, b, str, bias, s, e, f;
+      var bits2 = [], i, j, b, str, bias, s, e, f;
       for (i = bytes.length; i; i -= 1) {
         b = bytes[i - 1];
         for (j = 8; j; j -= 1) {
-          bits.push(b % 2 ? 1 : 0);
+          bits2.push(b % 2 ? 1 : 0);
           b = b >> 1;
         }
       }
-      bits.reverse();
-      str = bits.join("");
+      bits2.reverse();
+      str = bits2.join("");
       bias = (1 << ebits - 1) - 1;
       s = parseInt(str.substring(0, 1), 2) ? -1 : 1;
       e = parseInt(str.substring(1, 1 + ebits), 2);
@@ -74914,8 +74914,8 @@ var require_typedarray = __commonJS({
           }
         };
         ctor.prototype.subarray = function(start, end) {
-          function clamp(v, min2, max) {
-            return v < min2 ? min2 : v > max ? max : v;
+          function clamp(v, min2, max2) {
+            return v < min2 ? min2 : v > max2 ? max2 : v;
           }
           start = ECMAScript.ToInt32(start);
           end = ECMAScript.ToInt32(end);
@@ -75167,14 +75167,14 @@ var require_concat_stream = __commonJS({
         }
         len += parts[i].length;
       }
-      var u8 = new U8(len);
+      var u82 = new U8(len);
       for (var i = 0, offset = 0; i < parts.length; i++) {
         var part = parts[i];
         for (var j = 0; j < part.length; j++) {
-          u8[offset++] = part[j];
+          u82[offset++] = part[j];
         }
       }
-      return u8;
+      return u82;
     }
   }
 });
@@ -75328,6 +75328,484 @@ var init_paths = __esm({
   }
 });
 
+// ../../node_modules/.pnpm/fflate@0.8.3/node_modules/fflate/esm/index.mjs
+import { createRequire } from "module";
+function inflateSync(data, opts) {
+  return inflt(data, { i: 2 }, opts && opts.out, opts && opts.dictionary);
+}
+function strFromU8(dat, latin1) {
+  if (latin1) {
+    var r = "";
+    for (var i = 0; i < dat.length; i += 16384)
+      r += String.fromCharCode.apply(null, dat.subarray(i, i + 16384));
+    return r;
+  } else if (td) {
+    return td.decode(dat);
+  } else {
+    var _a2 = dutf8(dat), s = _a2.s, r = _a2.r;
+    if (r.length)
+      err(8);
+    return s;
+  }
+}
+function unzipSync(data, opts) {
+  var files = {};
+  var e = data.length - 22;
+  for (; b4(data, e) != 101010256; --e) {
+    if (!e || data.length - e > 65558)
+      err(13);
+  }
+  ;
+  var c = b2(data, e + 8);
+  if (!c)
+    return {};
+  var o = b4(data, e + 16);
+  var z = b4(data, e - 20) == 117853008;
+  if (z) {
+    var ze = b4(data, e - 12);
+    z = b4(data, ze) == 101075792;
+    if (z) {
+      c = b4(data, ze + 32);
+      o = b4(data, ze + 48);
+    }
+  }
+  var fltr = opts && opts.filter;
+  for (var i = 0; i < c; ++i) {
+    var _a2 = zh(data, o, z), c_2 = _a2[0], sc = _a2[1], su = _a2[2], fn = _a2[3], no = _a2[4], off = _a2[5], b = slzh(data, off);
+    o = no;
+    if (!fltr || fltr({
+      name: fn,
+      size: sc,
+      originalSize: su,
+      compression: c_2
+    })) {
+      if (!c_2)
+        files[fn] = slc(data, b, b + sc);
+      else if (c_2 == 8)
+        files[fn] = inflateSync(data.subarray(b, b + sc), { out: new u8(su) });
+      else
+        err(14, "unknown compression type " + c_2);
+    }
+  }
+  return files;
+}
+var require2, _a, Worker, isMarkedAsUntransferable, u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x, i, hMap, flt, i, i, i, i, fdt, i, flrm, fdrm, max, bits, bits16, shft, slc, ec, err, inflt, et, b2, b4, b8, td, tds, dutf8, slzh, zh, z64hs;
+var init_esm2 = __esm({
+  "../../node_modules/.pnpm/fflate@0.8.3/node_modules/fflate/esm/index.mjs"() {
+    require2 = createRequire("/");
+    try {
+      _a = require2("worker_threads"), Worker = _a.Worker, isMarkedAsUntransferable = _a.isMarkedAsUntransferable;
+    } catch (e) {
+    }
+    u8 = Uint8Array;
+    u16 = Uint16Array;
+    i32 = Int32Array;
+    fleb = new u8([
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      0,
+      /* unused */
+      0,
+      0,
+      /* impossible */
+      0
+    ]);
+    fdeb = new u8([
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      4,
+      4,
+      5,
+      5,
+      6,
+      6,
+      7,
+      7,
+      8,
+      8,
+      9,
+      9,
+      10,
+      10,
+      11,
+      11,
+      12,
+      12,
+      13,
+      13,
+      /* unused */
+      0,
+      0
+    ]);
+    clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+    freb = function(eb, start) {
+      var b = new u16(31);
+      for (var i = 0; i < 31; ++i) {
+        b[i] = start += 1 << eb[i - 1];
+      }
+      var r = new i32(b[30]);
+      for (var i = 1; i < 30; ++i) {
+        for (var j = b[i]; j < b[i + 1]; ++j) {
+          r[j] = j - b[i] << 5 | i;
+        }
+      }
+      return { b, r };
+    };
+    _a = freb(fleb, 2);
+    fl = _a.b;
+    revfl = _a.r;
+    fl[28] = 258, revfl[258] = 28;
+    _b = freb(fdeb, 0);
+    fd = _b.b;
+    revfd = _b.r;
+    rev = new u16(32768);
+    for (i = 0; i < 32768; ++i) {
+      x = (i & 43690) >> 1 | (i & 21845) << 1;
+      x = (x & 52428) >> 2 | (x & 13107) << 2;
+      x = (x & 61680) >> 4 | (x & 3855) << 4;
+      rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+    }
+    hMap = (function(cd, mb, r) {
+      var s = cd.length;
+      var i = 0;
+      var l = new u16(mb);
+      for (; i < s; ++i) {
+        if (cd[i])
+          ++l[cd[i] - 1];
+      }
+      var le = new u16(mb);
+      for (i = 1; i < mb; ++i) {
+        le[i] = le[i - 1] + l[i - 1] << 1;
+      }
+      var co;
+      if (r) {
+        co = new u16(1 << mb);
+        var rvb = 15 - mb;
+        for (i = 0; i < s; ++i) {
+          if (cd[i]) {
+            var sv = i << 4 | cd[i];
+            var r_1 = mb - cd[i];
+            var v = le[cd[i] - 1]++ << r_1;
+            for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
+              co[rev[v] >> rvb] = sv;
+            }
+          }
+        }
+      } else {
+        co = new u16(s);
+        for (i = 0; i < s; ++i) {
+          if (cd[i]) {
+            co[i] = rev[le[cd[i] - 1]++] >> 15 - cd[i];
+          }
+        }
+      }
+      return co;
+    });
+    flt = new u8(288);
+    for (i = 0; i < 144; ++i)
+      flt[i] = 8;
+    for (i = 144; i < 256; ++i)
+      flt[i] = 9;
+    for (i = 256; i < 280; ++i)
+      flt[i] = 7;
+    for (i = 280; i < 288; ++i)
+      flt[i] = 8;
+    fdt = new u8(32);
+    for (i = 0; i < 32; ++i)
+      fdt[i] = 5;
+    flrm = /* @__PURE__ */ hMap(flt, 9, 1);
+    fdrm = /* @__PURE__ */ hMap(fdt, 5, 1);
+    max = function(a) {
+      var m = a[0];
+      for (var i = 1; i < a.length; ++i) {
+        if (a[i] > m)
+          m = a[i];
+      }
+      return m;
+    };
+    bits = function(d, p, m) {
+      var o = p / 8 | 0;
+      return (d[o] | d[o + 1] << 8) >> (p & 7) & m;
+    };
+    bits16 = function(d, p) {
+      var o = p / 8 | 0;
+      return (d[o] | d[o + 1] << 8 | d[o + 2] << 16) >> (p & 7);
+    };
+    shft = function(p) {
+      return (p + 7) / 8 | 0;
+    };
+    slc = function(v, s, e) {
+      if (s == null || s < 0)
+        s = 0;
+      if (e == null || e > v.length)
+        e = v.length;
+      return new u8(v.subarray(s, e));
+    };
+    ec = [
+      "unexpected EOF",
+      "invalid block type",
+      "invalid length/literal",
+      "invalid distance",
+      "stream finished",
+      "no stream handler",
+      ,
+      // determined by compression function
+      "no callback",
+      "invalid UTF-8 data",
+      "extra field too long",
+      "date not in range 1980-2099",
+      "filename too long",
+      "stream finishing",
+      "invalid zip data"
+      // determined by unknown compression method
+    ];
+    err = function(ind, msg, nt) {
+      var e = new Error(msg || ec[ind]);
+      e.code = ind;
+      if (Error.captureStackTrace)
+        Error.captureStackTrace(e, err);
+      if (!nt)
+        throw e;
+      return e;
+    };
+    inflt = function(dat, st, buf, dict) {
+      var sl = dat.length, dl = dict ? dict.length : 0;
+      if (!sl || st.f && !st.l)
+        return buf || new u8(0);
+      var noBuf = !buf;
+      var resize = noBuf || st.i != 2;
+      var noSt = st.i;
+      if (noBuf)
+        buf = new u8(sl * 3);
+      var cbuf = function(l2) {
+        var bl = buf.length;
+        if (l2 > bl) {
+          var nbuf = new u8(Math.max(bl * 2, l2));
+          nbuf.set(buf);
+          buf = nbuf;
+        }
+      };
+      var final = st.f || 0, pos = st.p || 0, bt = st.b || 0, lm = st.l, dm = st.d, lbt = st.m, dbt = st.n;
+      var tbts = sl * 8;
+      do {
+        if (!lm) {
+          final = bits(dat, pos, 1);
+          var type = bits(dat, pos + 1, 3);
+          pos += 3;
+          if (!type) {
+            var s = shft(pos) + 4, l = dat[s - 4] | dat[s - 3] << 8, t = s + l;
+            if (t > sl) {
+              if (noSt)
+                err(0);
+              break;
+            }
+            if (resize)
+              cbuf(bt + l);
+            buf.set(dat.subarray(s, t), bt);
+            st.b = bt += l, st.p = pos = t * 8, st.f = final;
+            continue;
+          } else if (type == 1)
+            lm = flrm, dm = fdrm, lbt = 9, dbt = 5;
+          else if (type == 2) {
+            var hLit = bits(dat, pos, 31) + 257, hcLen = bits(dat, pos + 10, 15) + 4;
+            var tl = hLit + bits(dat, pos + 5, 31) + 1;
+            pos += 14;
+            var ldt = new u8(tl);
+            var clt = new u8(19);
+            for (var i = 0; i < hcLen; ++i) {
+              clt[clim[i]] = bits(dat, pos + i * 3, 7);
+            }
+            pos += hcLen * 3;
+            var clb = max(clt), clbmsk = (1 << clb) - 1;
+            var clm = hMap(clt, clb, 1);
+            for (var i = 0; i < tl; ) {
+              var r = clm[bits(dat, pos, clbmsk)];
+              pos += r & 15;
+              var s = r >> 4;
+              if (s < 16) {
+                ldt[i++] = s;
+              } else {
+                var c = 0, n = 0;
+                if (s == 16)
+                  n = 3 + bits(dat, pos, 3), pos += 2, c = ldt[i - 1];
+                else if (s == 17)
+                  n = 3 + bits(dat, pos, 7), pos += 3;
+                else if (s == 18)
+                  n = 11 + bits(dat, pos, 127), pos += 7;
+                while (n--)
+                  ldt[i++] = c;
+              }
+            }
+            var lt2 = ldt.subarray(0, hLit), dt = ldt.subarray(hLit);
+            lbt = max(lt2);
+            dbt = max(dt);
+            lm = hMap(lt2, lbt, 1);
+            dm = hMap(dt, dbt, 1);
+          } else
+            err(1);
+          if (pos > tbts) {
+            if (noSt)
+              err(0);
+            break;
+          }
+        }
+        if (resize)
+          cbuf(bt + 131072);
+        var lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
+        var lpos = pos;
+        for (; ; lpos = pos) {
+          var c = lm[bits16(dat, pos) & lms], sym = c >> 4;
+          pos += c & 15;
+          if (pos > tbts) {
+            if (noSt)
+              err(0);
+            break;
+          }
+          if (!c)
+            err(2);
+          if (sym < 256)
+            buf[bt++] = sym;
+          else if (sym == 256) {
+            lpos = pos, lm = null;
+            break;
+          } else {
+            var add = sym - 254;
+            if (sym > 264) {
+              var i = sym - 257, b = fleb[i];
+              add = bits(dat, pos, (1 << b) - 1) + fl[i];
+              pos += b;
+            }
+            var d = dm[bits16(dat, pos) & dms], dsym = d >> 4;
+            if (!d)
+              err(3);
+            pos += d & 15;
+            var dt = fd[dsym];
+            if (dsym > 3) {
+              var b = fdeb[dsym];
+              dt += bits16(dat, pos) & (1 << b) - 1, pos += b;
+            }
+            if (pos > tbts) {
+              if (noSt)
+                err(0);
+              break;
+            }
+            if (resize)
+              cbuf(bt + 131072);
+            var end = bt + add;
+            if (bt < dt) {
+              var shift = dl - dt, dend = Math.min(dt, end);
+              if (shift + bt < 0)
+                err(3);
+              for (; bt < dend; ++bt)
+                buf[bt] = dict[shift + bt];
+            }
+            for (; bt < end; ++bt)
+              buf[bt] = buf[bt - dt];
+          }
+        }
+        st.l = lm, st.p = lpos, st.b = bt, st.f = final;
+        if (lm)
+          final = 1, st.m = lbt, st.d = dm, st.n = dbt;
+      } while (!final);
+      return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
+    };
+    et = /* @__PURE__ */ new u8(0);
+    b2 = function(d, b) {
+      return d[b] | d[b + 1] << 8;
+    };
+    b4 = function(d, b) {
+      return (d[b] | d[b + 1] << 8 | d[b + 2] << 16 | d[b + 3] << 24) >>> 0;
+    };
+    b8 = function(d, b) {
+      return b4(d, b) + b4(d, b + 4) * 4294967296;
+    };
+    td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
+    tds = 0;
+    try {
+      td.decode(et, { stream: true });
+      tds = 1;
+    } catch (e) {
+    }
+    dutf8 = function(d) {
+      for (var r = "", i = 0; ; ) {
+        var c = d[i++];
+        var eb = (c > 127) + (c > 223) + (c > 239);
+        if (i + eb > d.length)
+          return { s: r, r: slc(d, i - 1) };
+        if (!eb)
+          r += String.fromCharCode(c);
+        else if (eb == 3) {
+          c = ((c & 15) << 18 | (d[i++] & 63) << 12 | (d[i++] & 63) << 6 | d[i++] & 63) - 65536, r += String.fromCharCode(55296 | c >> 10, 56320 | c & 1023);
+        } else if (eb & 1)
+          r += String.fromCharCode((c & 31) << 6 | d[i++] & 63);
+        else
+          r += String.fromCharCode((c & 15) << 12 | (d[i++] & 63) << 6 | d[i++] & 63);
+      }
+    };
+    slzh = function(d, b) {
+      return b + 30 + b2(d, b + 26) + b2(d, b + 28);
+    };
+    zh = function(d, b, z) {
+      var fnl = b2(d, b + 28), efl = b2(d, b + 30), fn = strFromU8(d.subarray(b + 46, b + 46 + fnl), !(b2(d, b + 8) & 2048)), es = b + 46 + fnl;
+      var _a2 = z64hs(d, es, efl, z, b4(d, b + 20), b4(d, b + 24), b4(d, b + 42)), sc = _a2[0], su = _a2[1], off = _a2[2];
+      return [b2(d, b + 10), sc, su, fn, es + efl + b2(d, b + 32), off];
+    };
+    z64hs = function(d, b, l, z, sc, su, off) {
+      var nsc = sc == 4294967295, nsu = su == 4294967295, noff = off == 4294967295, e = b + l;
+      var nf = nsc + nsu + noff;
+      if (z && nf) {
+        for (; b + 4 < e; b += 4 + b2(d, b + 2)) {
+          if (b2(d, b) == 1) {
+            return [
+              nsc ? b8(d, b + 4 + 8 * nsu) : sc,
+              nsu ? b8(d, b + 4) : su,
+              noff ? b8(d, b + 4 + 8 * (nsu + nsc)) : off,
+              1
+            ];
+          }
+        }
+        if (z < 2)
+          err(13);
+      }
+      return [sc, su, off, 0];
+    };
+  }
+});
+
 // src/services/shell.ts
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -75335,13 +75813,25 @@ async function runCommand(command, args, options) {
   const { stdout, stderr } = await execFileAsync(command, args, {
     cwd: options?.cwd,
     timeout: options?.timeoutMs ?? 12e4,
-    maxBuffer: options?.maxBuffer ?? 20 * 1024 * 1024
+    maxBuffer: options?.maxBuffer ?? 20 * 1024 * 1024,
+    windowsHide: true
   });
-  return { stdout: stdout.toString(), stderr: stderr.toString() };
+  return {
+    stdout: stdout.toString(),
+    stderr: stderr.toString()
+  };
 }
 async function commandExists(command) {
   try {
-    await runCommand("which", [command], { timeoutMs: 5e3 });
+    const checker = process.platform === "win32" ? "where.exe" : "which";
+    await execFileAsync(
+      checker,
+      [command],
+      {
+        timeout: 5e3,
+        windowsHide: true
+      }
+    );
     return true;
   } catch {
     return false;
@@ -75356,7 +75846,14 @@ var init_shell = __esm({
 });
 
 // src/services/extraction.ts
-import { mkdir as mkdir2, readdir, stat, writeFile, readFile } from "node:fs/promises";
+import {
+  mkdir as mkdir2,
+  readdir,
+  stat,
+  writeFile,
+  readFile,
+  copyFile
+} from "node:fs/promises";
 import path2 from "node:path";
 async function walkDir(dir, root, files) {
   let entries;
@@ -75422,13 +75919,7 @@ async function extractGzipChunks(firmwarePath, extractPath) {
   }
   return count;
 }
-function detectArchitectureFromBuffer(buf) {
-  if (buf.length < 20) return "UNKNOWN";
-  if (buf[0] !== 127 || buf[1] !== 69 || buf[2] !== 76 || buf[3] !== 70) {
-    return "UNKNOWN";
-  }
-  const littleEndian = buf[5] === 1;
-  const machine = littleEndian ? buf.readUInt16LE(18) : buf.readUInt16BE(18);
+function architectureFromElfMachine(machine) {
   switch (machine) {
     case 3:
       return "x86";
@@ -75452,22 +75943,20 @@ function detectArchitectureFromBuffer(buf) {
       return `ELF (${machine})`;
   }
 }
-async function detectArchitectureFromFiles(extractPath, files) {
-  for (const file2 of files) {
-    try {
-      const fullPath = path2.join(
-        extractPath,
-        file2.path.replace(/^\/+/, "")
-      );
-      const buf = await readFile(fullPath);
-      const architecture = detectArchitectureFromBuffer(buf);
-      if (architecture !== "UNKNOWN") {
-        return architecture;
-      }
-    } catch {
-    }
+function detectElfArchitecture(buf, offset = 0) {
+  if (offset + 20 > buf.length) {
+    return null;
   }
-  return "UNKNOWN";
+  if (buf[offset] !== 127 || buf[offset + 1] !== 69 || buf[offset + 2] !== 76 || buf[offset + 3] !== 70) {
+    return null;
+  }
+  const elfClass = buf[offset + 4];
+  const endian = buf[offset + 5];
+  if (elfClass !== 1 && elfClass !== 2 || endian !== 1 && endian !== 2) {
+    return null;
+  }
+  const machine = endian === 1 ? buf.readUInt16LE(offset + 18) : buf.readUInt16BE(offset + 18);
+  return architectureFromElfMachine(machine);
 }
 function detectArchitectureFromFilename(fileName) {
   const normalized = fileName.toLowerCase();
@@ -75507,39 +75996,180 @@ function detectArchitectureFromStrings(stringsOutput) {
   }
   return null;
 }
+async function detectArchitectureFromFiles(extractPath, files) {
+  for (const file2 of files) {
+    const fullPath = path2.join(
+      extractPath,
+      file2.path.replace(/^[/\\]/, "")
+    );
+    try {
+      const buf = await readFile(fullPath);
+      const architecture = detectElfArchitecture(buf) ?? detectEmbeddedElfArchitecture(buf) ?? detectUImageArchitecture(buf) ?? detectPeArchitecture(buf);
+      if (architecture) {
+        return architecture;
+      }
+    } catch {
+    }
+  }
+  return "UNKNOWN";
+}
 function detectVendor(stringsOutput, files, firmwarePath) {
+  const fileName = path2.basename(firmwarePath).toLowerCase();
+  const filePaths = files.map((f) => f.path).join("\n").toLowerCase();
   const haystack = `
 ${stringsOutput}
-${firmwarePath}
-${files.map((f) => f.path).join("\n")}
+${fileName}
+${filePaths}
 `.toLowerCase();
-  const vendors = [
-    ["OpenWrt", /\bopenwrt\b/],
-    ["TP-Link", /\btp[-_ ]?link\b/],
-    ["Netgear", /\bnetgear\b/],
-    ["D-Link", /\bd[-_ ]?link\b/],
-    ["ASUS", /\basus\b/],
-    ["Linksys", /\blinksys\b/],
-    ["Belkin", /\bbelkin\b/],
-    ["Zyxel", /\bzyxel\b/],
-    ["Ubiquiti", /\bubiquiti\b/],
-    ["MikroTik", /\bmikrotik\b/],
-    ["Huawei", /\bhuawei\b/],
-    ["Hikvision", /\bhikvision\b/],
-    ["Dahua", /\bdahua\b/],
-    ["Xiaomi", /\bxiaomi\b/],
-    ["Realtek", /\brealtek\b/],
-    ["Broadcom", /\bbroadcom\b/],
-    ["MediaTek", /\bmediatek\b/],
-    ["Qualcomm", /\bqualcomm\b/],
-    ["Marvell", /\bmarvell\b/],
-    ["Samsung", /\bsamsung\b/],
-    ["Synology", /\bsynology\b/],
-    ["QNAP", /\bqnap\b/]
+  const vendorRules = [
+    {
+      vendor: "TP-Link",
+      patterns: [
+        /\btp[-_ ]?link\b/i,
+        /\barcher[-_ ]?[a-z0-9-]+\b/i,
+        /\btl-(?:wr|mr|er|sg|sf|r)[a-z0-9-]*\b/i,
+        /\bomada\b/i
+      ]
+    },
+    {
+      vendor: "D-Link",
+      patterns: [
+        /\bd[-_ ]?link\b/i,
+        /\bdir[-_ ]?[a-z0-9-]+\b/i,
+        /\bdsl[-_ ]?[a-z0-9-]+\b/i
+      ]
+    },
+    {
+      vendor: "Netgear",
+      patterns: [
+        /\bnetgear\b/i,
+        /\bnighthawk\b/i,
+        /\br\d{3,4}\b/i
+      ]
+    },
+    {
+      vendor: "ASUS",
+      patterns: [
+        /\basustek\b/i,
+        /\basus\b/i,
+        /\brog[-_ ]?router\b/i
+      ]
+    },
+    {
+      vendor: "Linksys",
+      patterns: [
+        /\blinksys\b/i,
+        /\bvelop\b/i
+      ]
+    },
+    {
+      vendor: "Ubiquiti",
+      patterns: [
+        /\bubiquiti\b/i,
+        /\bunifi\b/i,
+        /\bedgerouter\b/i
+      ]
+    },
+    {
+      vendor: "MikroTik",
+      patterns: [
+        /\bmikrotik\b/i,
+        /\brouteros\b/i
+      ]
+    },
+    {
+      vendor: "Zyxel",
+      patterns: [
+        /\bzyxel\b/i
+      ]
+    },
+    {
+      vendor: "Huawei",
+      patterns: [
+        /\bhuawei\b/i,
+        /\bhg\d{2,4}\b/i
+      ]
+    },
+    {
+      vendor: "Netgear",
+      patterns: [
+        /\bnetgear\b/i,
+        /\bnighthawk\b/i
+      ]
+    },
+    {
+      vendor: "Dahua",
+      patterns: [
+        /\bdahua\b/i
+      ]
+    },
+    {
+      vendor: "Xiaomi",
+      patterns: [
+        /\bxiaomi\b/i,
+        /\bmi[-_ ]?router\b/i
+      ]
+    },
+    {
+      vendor: "Realtek",
+      patterns: [
+        /\brealtek\b/i,
+        /\brtl\d{4,6}\b/i
+      ]
+    },
+    {
+      vendor: "Broadcom",
+      patterns: [
+        /\bbroadcom\b/i,
+        /\bbcm\d+\b/i
+      ]
+    },
+    {
+      vendor: "MediaTek",
+      patterns: [
+        /\bmediatek\b/i,
+        /\bmt\d{4,6}\b/i
+      ]
+    },
+    {
+      vendor: "Qualcomm",
+      patterns: [
+        /\bqualcomm\b/i,
+        /\batheros\b/i,
+        /\bipq\d+\b/i
+      ]
+    },
+    {
+      vendor: "Marvell",
+      patterns: [
+        /\bmarvell\b/i
+      ]
+    },
+    {
+      vendor: "Synology",
+      patterns: [
+        /\bsynology\b/i
+      ]
+    },
+    {
+      vendor: "QNAP",
+      patterns: [
+        /\bqnap\b/i
+      ]
+    },
+    {
+      vendor: "OpenWrt",
+      patterns: [
+        /\bopenwrt\b/i,
+        /\bopenwrt[-_ ]?\d+\.\d+/i
+      ]
+    }
   ];
-  for (const [vendor, pattern] of vendors) {
-    if (pattern.test(haystack)) {
-      return vendor;
+  for (const rule of vendorRules) {
+    if (rule.patterns.some(
+      (pattern) => pattern.test(haystack)
+    )) {
+      return rule.vendor;
     }
   }
   return null;
@@ -75594,6 +76224,27 @@ function detectComponents(files, stringsOutput) {
 }
 async function extractFirmware(firmwarePath, extractPath) {
   await mkdir2(extractPath, { recursive: true });
+  const firmwareBuffer = await readFile(firmwarePath);
+  const format = detectFirmwareFormat(
+    firmwareBuffer,
+    path2.basename(firmwarePath)
+  );
+  console.log(
+    "[Firmware Format]:",
+    format
+  );
+  if (format === "TRX") {
+    await extractTrx(
+      firmwarePath,
+      extractPath
+    );
+  }
+  if (format === "ZIP") {
+    await extractZip(
+      firmwarePath,
+      extractPath
+    );
+  }
   const hasBinwalk = await commandExists("binwalk");
   if (hasBinwalk) {
     try {
@@ -75606,7 +76257,6 @@ async function extractFirmware(firmwarePath, extractPath) {
     }
   }
   const rawCopy = path2.join(extractPath, "firmware.bin");
-  const { copyFile } = await import("node:fs/promises");
   await copyFile(firmwarePath, rawCopy);
   await extractGzipChunks(firmwarePath, extractPath);
   let stringsOutput = "";
@@ -75618,14 +76268,20 @@ async function extractFirmware(firmwarePath, extractPath) {
         { timeoutMs: 6e4 }
       );
       stringsOutput = stdout;
-      await writeFile(
-        path2.join(extractPath, "_strings_dump.txt"),
-        stringsOutput
-      );
     } catch {
       stringsOutput = "";
     }
   }
+  if (!stringsOutput) {
+    stringsOutput = extractAsciiStrings(firmwareBuffer);
+  }
+  await writeFile(
+    path2.join(
+      extractPath,
+      "_strings_dump.txt"
+    ),
+    stringsOutput
+  );
   const files = [];
   await walkDir(extractPath, extractPath, files);
   let architecture = await detectArchitectureFromFiles(
@@ -75636,17 +76292,20 @@ async function extractFirmware(firmwarePath, extractPath) {
     path2.basename(firmwarePath)
   );
   if (architecture === "UNKNOWN") {
-    const stringArchitecture = detectArchitectureFromStrings(stringsOutput);
+    architecture = detectArchitectureFromBuffer(
+      firmwareBuffer
+    );
+  }
+  if (architecture === "UNKNOWN") {
+    const stringArchitecture = detectArchitectureFromStrings(
+      stringsOutput
+    );
     if (stringArchitecture) {
       architecture = stringArchitecture;
     }
   }
   if (architecture === "UNKNOWN" && filenameArchitecture) {
     architecture = filenameArchitecture;
-  }
-  if (architecture === "UNKNOWN") {
-    const firmwareBuffer = await readFile(firmwarePath);
-    architecture = detectArchitectureFromBuffer(firmwareBuffer);
   }
   const vendor = detectVendor(stringsOutput, files, firmwarePath) || null;
   const version3 = detectVersion(stringsOutput);
@@ -75664,10 +76323,235 @@ async function extractFirmware(firmwarePath, extractPath) {
     components
   };
 }
+function detectEmbeddedElfArchitecture(buf) {
+  const maxScan = buf.length;
+  for (let i = 0; i < maxScan - 20; i++) {
+    if (buf[i] === 127 && buf[i + 1] === 69 && buf[i + 2] === 76 && buf[i + 3] === 70) {
+      const architecture = detectElfArchitecture(
+        buf,
+        i
+      );
+      if (architecture) {
+        return architecture;
+      }
+    }
+  }
+  return null;
+}
+function detectUImageArchitecture(buf) {
+  const UIMAGE_MAGIC = 654645590;
+  for (let i = 0; i <= buf.length - 64; i++) {
+    const magic = buf.readUInt32BE(i);
+    if (magic !== UIMAGE_MAGIC) {
+      continue;
+    }
+    const arch = buf[i + 29];
+    switch (arch) {
+      case 2:
+        return "ARM";
+      case 3:
+        return "x86";
+      case 5:
+        return "MIPS";
+      case 6:
+        return "MIPS64";
+      case 7:
+        return "PowerPC";
+      case 8:
+        return "S390";
+      case 9:
+        return "SuperH";
+      case 10:
+        return "SPARC";
+      case 22:
+        return "ARM64";
+      case 24:
+        return "x86_64";
+    }
+  }
+  return null;
+}
+function detectPeArchitecture(buf) {
+  for (let i = 0; i <= buf.length - 64; i++) {
+    if (buf[i] !== 77 || buf[i + 1] !== 90) {
+      continue;
+    }
+    const peOffset = buf.readUInt32LE(i + 60);
+    if (peOffset < 0 || i + peOffset + 6 > buf.length) {
+      continue;
+    }
+    const pe = i + peOffset;
+    if (buf[pe] !== 80 || buf[pe + 1] !== 69 || buf[pe + 2] !== 0 || buf[pe + 3] !== 0) {
+      continue;
+    }
+    const machine = buf.readUInt16LE(pe + 4);
+    switch (machine) {
+      case 332:
+        return "x86";
+      case 34404:
+        return "x86_64";
+      case 43620:
+        return "ARM64";
+      case 448:
+        return "ARM";
+      case 452:
+        return "ARM";
+    }
+  }
+  return null;
+}
+async function extractTrx(firmwarePath, extractPath) {
+  const buf = await readFile(firmwarePath);
+  if (buf.length < 28) {
+    return 0;
+  }
+  const MAGIC = 810697800;
+  if (buf.readUInt32LE(0) !== MAGIC) {
+    return 0;
+  }
+  const totalLength = buf.readUInt32LE(4);
+  const imageLength = totalLength > 0 && totalLength <= buf.length ? totalLength : buf.length;
+  const offsets = [
+    buf.readUInt32LE(16),
+    buf.readUInt32LE(20),
+    buf.readUInt32LE(24)
+  ].filter(
+    (offset) => offset > 0 && offset < buf.length
+  ).sort((a, b) => a - b);
+  let count = 0;
+  for (let i = 0; i < offsets.length; i++) {
+    const start = offsets[i];
+    const end = offsets[i + 1] ?? imageLength;
+    if (end <= start) {
+      continue;
+    }
+    const payload = buf.subarray(
+      start,
+      end
+    );
+    await writeFile(
+      path2.join(
+        extractPath,
+        `trx-part-${count}.bin`
+      ),
+      payload
+    );
+    count++;
+  }
+  return count;
+}
+function detectArchitectureFromBuffer(buf) {
+  return detectElfArchitecture(buf) ?? detectEmbeddedElfArchitecture(buf) ?? detectUImageArchitecture(buf) ?? detectPeArchitecture(buf) ?? "UNKNOWN";
+}
+async function extractZip(firmwarePath, extractPath) {
+  const buf = await readFile(firmwarePath);
+  const isZip = buf.length >= 4 && (buf.subarray(0, 4).equals(
+    Buffer.from([80, 75, 3, 4])
+  ) || buf.subarray(0, 4).equals(
+    Buffer.from([80, 75, 5, 6])
+  ) || buf.subarray(0, 4).equals(
+    Buffer.from([80, 75, 7, 8])
+  ));
+  if (!isZip) {
+    return 0;
+  }
+  const entries = unzipSync(
+    new Uint8Array(buf)
+  );
+  let count = 0;
+  for (const [entryName, data] of Object.entries(
+    entries
+  )) {
+    if (!data || data.length === 0) {
+      continue;
+    }
+    const safeName = entryName.replace(/\\/g, "/").replace(/^\/+/, "").split("/").filter(
+      (part) => part !== ".." && part !== "."
+    ).join("/");
+    if (!safeName) {
+      continue;
+    }
+    const outputPath = path2.join(
+      extractPath,
+      "zip",
+      safeName
+    );
+    await mkdir2(
+      path2.dirname(outputPath),
+      { recursive: true }
+    );
+    await writeFile(
+      outputPath,
+      Buffer.from(data)
+    );
+    count++;
+  }
+  return count;
+}
+function detectFirmwareFormat(buf, fileName) {
+  const lower = fileName.toLowerCase();
+  if (buf.length >= 4 && (buf.subarray(0, 4).equals(
+    Buffer.from([80, 75, 3, 4])
+  ) || buf.subarray(0, 4).equals(
+    Buffer.from([80, 75, 5, 6])
+  ) || buf.subarray(0, 4).equals(
+    Buffer.from([80, 75, 7, 8])
+  ))) {
+    return "ZIP";
+  }
+  if (buf.length >= 4 && buf.readUInt32LE(0) === 810697800) {
+    return "TRX";
+  }
+  if (buf.length >= 4 && buf.readUInt32BE(0) === 654645590) {
+    return "uImage";
+  }
+  if (buf.length >= 4 && buf.readUInt32LE(0) === 1936814952) {
+    return "SquashFS";
+  }
+  if (buf.length >= 4 && buf.readUInt32BE(0) === 684539205) {
+    return "CramFS";
+  }
+  if (buf.length >= 4 && buf.subarray(0, 4).toString("ascii") === "UBI#") {
+    return "UBI";
+  }
+  if (lower.endsWith(".chk")) {
+    return "CHK";
+  }
+  if (lower.endsWith(".img")) {
+    return "Disk/Filesystem Image";
+  }
+  if (lower.endsWith(".bin")) {
+    return "Firmware Binary";
+  }
+  return "Unknown";
+}
+function extractAsciiStrings(buf, minimumLength = 4) {
+  const result = [];
+  let current = "";
+  for (const byte of buf) {
+    if (byte >= 32 && byte <= 126) {
+      current += String.fromCharCode(byte);
+      if (current.length >= 500) {
+        result.push(current);
+        current = "";
+      }
+    } else {
+      if (current.length >= minimumLength) {
+        result.push(current);
+      }
+      current = "";
+    }
+  }
+  if (current.length >= minimumLength) {
+    result.push(current);
+  }
+  return result.join("\n");
+}
 var IOT_BINARIES;
 var init_extraction = __esm({
   "src/services/extraction.ts"() {
     "use strict";
+    init_esm2();
     init_shell();
     IOT_BINARIES = [
       "busybox",
@@ -75796,17 +76680,34 @@ var init_firmware3 = __esm({
             destPath
           );
           const extractPath = firmwareExtractPath(fw.id);
-          let architecture = "UNKNOWN";
-          let vendor = null;
-          let version3 = null;
-          try {
-            const extraction = await extractFirmware(destPath, extractPath);
-            architecture = extraction.architecture;
-            vendor = extraction.vendor;
-            version3 = extraction.version;
-          } catch (err) {
-            console.error("[Firmware Metadata Detection Error]", err);
-          }
+          await db.update(firmwareTable).set({
+            filePath: destPath,
+            extractPath
+          }).where(
+            eq(
+              firmwareTable.id,
+              fw.id
+            )
+          );
+          const extractionResult = await extractFirmware(
+            destPath,
+            extractPath
+          );
+          const {
+            architecture,
+            vendor,
+            version: version3
+          } = extractionResult;
+          res.status(201).json(
+            toFirmwareResponse({
+              ...fw,
+              filePath: destPath,
+              extractPath,
+              architecture: "UNKNOWN",
+              vendor: null,
+              version: null
+            })
+          );
           await db.update(firmwareTable).set({
             filePath: destPath,
             extractPath,
@@ -75825,15 +76726,16 @@ var init_firmware3 = __esm({
             toFirmwareResponse({
               ...fw,
               filePath: destPath,
+              extractPath,
               architecture,
               vendor,
               version: version3
             })
           );
-        } catch (err) {
+        } catch (err2) {
           console.error(
             "[Firmware Upload Error]",
-            err
+            err2
           );
           try {
             if (req.file?.path) {
@@ -76094,8 +76996,8 @@ async function fetchNvdCve(cveId) {
       publishedDate: item.published?.split("T")[0] ?? (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
       patchAvailable: true
     };
-  } catch (err) {
-    logger.warn({ err, cveId }, "NVD lookup failed");
+  } catch (err2) {
+    logger.warn({ err: err2, cveId }, "NVD lookup failed");
     return null;
   }
 }
@@ -76201,8 +77103,8 @@ async function queryVirusTotal(sha256) {
       virusTotalResult: malicious > 0 ? "malicious" : suspicious > 0 ? "suspicious" : "clean",
       threatScore: Math.min(100, Math.round((malicious + suspicious) / total * 100))
     };
-  } catch (err) {
-    logger.warn({ err }, "VirusTotal lookup failed");
+  } catch (err2) {
+    logger.warn({ err: err2 }, "VirusTotal lookup failed");
     return null;
   }
 }
@@ -76602,9 +77504,9 @@ function parseJsonResponse(text2) {
         parsed.exploitProbability
       )
     };
-  } catch (err) {
+  } catch (err2) {
     logger.error(
-      { err },
+      { err: err2 },
       "Failed to parse Gemini JSON response."
     );
     return null;
@@ -76735,12 +77637,12 @@ async function generateAiReport(ctx) {
         "Firmware report generated successfully."
       );
       return parsed;
-    } catch (err) {
-      lastError = err;
+    } catch (err2) {
+      lastError = err2;
       logger.warn(
         {
           attempt,
-          err
+          err: err2
         },
         "Gemini request failed."
       );
@@ -77260,10 +78162,10 @@ async function runScanPipeline(firmwareId, scanId) {
     console.log("Risk         :", riskLevel.toUpperCase());
     console.log("========================================");
     console.log("");
-  } catch (err) {
+  } catch (err2) {
     logger.error(
       {
-        err,
+        err: err2,
         firmwareId
       },
       "Scan pipeline failed"
@@ -77556,8 +78458,8 @@ var init_cve2 = __esm({
         }
         const matches = await getMatchesForFirmware(firmwareId);
         res.json(matches);
-      } catch (err) {
-        console.error("Error fetching CVE matches:", err);
+      } catch (err2) {
+        console.error("Error fetching CVE matches:", err2);
         res.status(500).json({ error: "Internal server error" });
       }
     });
@@ -77582,8 +78484,8 @@ var init_cve2 = __esm({
           low,
           averageScore: Math.round(avgScore * 10) / 10
         });
-      } catch (err) {
-        console.error("Error fetching CVE scores:", err);
+      } catch (err2) {
+        console.error("Error fetching CVE scores:", err2);
         res.status(500).json({ error: "Internal server error" });
       }
     });
@@ -78249,9 +79151,9 @@ var port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
-app2.listen(port, (err) => {
-  if (err) {
-    logger2.error({ err }, "Error listening on port");
+app2.listen(port, (err2) => {
+  if (err2) {
+    logger2.error({ err: err2 }, "Error listening on port");
     process.exit(1);
   }
   logger2.info({ port }, "Server listening");
