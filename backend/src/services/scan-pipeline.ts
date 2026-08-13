@@ -26,23 +26,63 @@ import { generateAiReport } from "./gemini.js";
 import { generateSbomReport } from "./sbom-generator.js";
 import { runPythonScanner } from "./python-scanner.js";
 
-function computeRiskLevel(
-  vulnCount: number,
-  criticalCount: number,
-  malwareCount: number,
-): "critical" | "high" | "medium" | "low" {
-  if (criticalCount > 0 || malwareCount > 0) {
+/*
+ * ============================================================
+ * Deduplication helper
+ * ============================================================
+ * Python and TypeScript scanners can both flag the same
+ * finding (e.g. the same hardcoded password). We normalize on
+ * a stable key and keep only the first occurrence.
+ */
+function dedupeByKey<T>(items: T[], keyFn: (item: T) => string): T[] {
+  const map = new Map<string, T>();
+  for (const item of items) {
+    const key = keyFn(item);
+    if (!map.has(key)) map.set(key, item);
+  }
+  return Array.from(map.values());
+}
+
+/*
+ * ============================================================
+ * Risk aggregation
+ * ============================================================
+ * Considers secrets, dangerous functions, vulnerabilities,
+ * CVEs, and malware together. Any critical-severity secret,
+ * vulnerability, CVE, or a malware hit forces an automatic
+ * "critical" rating, regardless of the numeric score.
+ */
+type RiskFactors = {
+  vulnCount: number;
+  criticalVulnCount: number;
+  highVulnCount: number;
+  secretsCount: number;
+  criticalSecretsCount: number;
+  dangerousFunctionsCount: number;
+  cveCriticalCount: number;
+  cveHighCount: number;
+  malwareCount: number;
+};
+
+function computeRiskLevel(factors: RiskFactors): "critical" | "high" | "medium" | "low" {
+  if (
+    factors.malwareCount > 0 ||
+    factors.criticalSecretsCount > 0 ||
+    factors.criticalVulnCount > 0 ||
+    factors.cveCriticalCount > 0
+  ) {
     return "critical";
   }
 
-  if (vulnCount > 5) {
-    return "high";
-  }
+  let score = 0;
+  score += factors.highVulnCount * 10;
+  score += factors.secretsCount * 8;
+  score += factors.dangerousFunctionsCount * 6;
+  score += factors.cveHighCount * 10;
+  score += factors.vulnCount * 2;
 
-  if (vulnCount > 0) {
-    return "medium";
-  }
-
+  if (score >= 30) return "high";
+  if (score > 0) return "medium";
   return "low";
 }
 
@@ -95,7 +135,23 @@ export async function runScanPipeline(
       .where(eq(firmwareTable.id, firmwareId));
 
     // ==========================================
-    // 2. PYTHON FIRMWARE SCANNER
+    // 2. RE-SCAN CLEANUP
+    // ==========================================
+    // Clear findings from any previous scan of this firmware so
+    // stale rows don't mix with the new scan's results.
+
+    await db.transaction(async (tx) => {
+      await tx.delete(extractedFilesTable).where(eq(extractedFilesTable.firmwareId, firmwareId));
+      await tx.delete(hardcodedSecretsTable).where(eq(hardcodedSecretsTable.firmwareId, firmwareId));
+      await tx.delete(dangerousFunctionsTable).where(eq(dangerousFunctionsTable.firmwareId, firmwareId));
+      await tx.delete(vulnerabilitiesTable).where(eq(vulnerabilitiesTable.firmwareId, firmwareId));
+      await tx.delete(cveMatchesTable).where(eq(cveMatchesTable.firmwareId, firmwareId));
+      await tx.delete(malwareHashesTable).where(eq(malwareHashesTable.firmwareId, firmwareId));
+      await tx.delete(emulationLogsTable).where(eq(emulationLogsTable.firmwareId, firmwareId));
+    });
+
+    // ==========================================
+    // 3. PYTHON FIRMWARE SCANNER
     // ==========================================
 
     const extractPath =
@@ -127,7 +183,7 @@ export async function runScanPipeline(
     });
 
     // ==========================================
-    // 3. DETECTED METADATA
+    // 4. DETECTED METADATA
     // ==========================================
 
     const architecture =
@@ -177,7 +233,7 @@ export async function runScanPipeline(
     );
 
     // ==========================================
-    // 4. SAVE METADATA
+    // 5. SAVE METADATA
     // ==========================================
 
     await db
@@ -198,7 +254,7 @@ export async function runScanPipeline(
       .where(eq(scanResultsTable.id, scanId));
 
     // ==========================================
-    // 5. SAVE EXTRACTED FILES
+    // 6. SAVE EXTRACTED FILES
     // ==========================================
 
     if (extraction.files.length > 0) {
@@ -240,7 +296,7 @@ export async function runScanPipeline(
     console.log("");
 
     // ==========================================
-    // 6. STATIC ANALYSIS
+    // 7. STATIC ANALYSIS
     // ==========================================
 
     const staticAnalysis =
@@ -257,7 +313,8 @@ export async function runScanPipeline(
      * - dangerous function detection
      *
      * The existing TypeScript static analyzer
-     * can provide additional findings.
+     * can provide additional findings. We merge
+     * both sources and then deduplicate.
      */
 
     const pythonSecrets =
@@ -269,20 +326,20 @@ export async function runScanPipeline(
     const pythonVulnerabilities =
       extraction.staticAnalysis?.vulnerabilities ?? [];
 
-    const combinedSecrets = [
-      ...pythonSecrets,
-      ...staticAnalysis.secrets,
-    ];
+    const combinedSecrets = dedupeByKey(
+      [...pythonSecrets, ...staticAnalysis.secrets],
+      (s: any) => `${s.type}:${s.file ?? s.affectedFile ?? ""}:${s.line ?? 0}:${s.value ?? ""}`,
+    );
 
-    const combinedDangerous = [
-      ...pythonDangerous,
-      ...staticAnalysis.dangerous,
-    ];
+    const combinedDangerous = dedupeByKey(
+      [...pythonDangerous, ...staticAnalysis.dangerous],
+      (d: any) => `${d.name}:${d.file ?? d.affectedFile ?? ""}:${d.line ?? 0}`,
+    );
 
-    const combinedVulnerabilities = [
-      ...pythonVulnerabilities,
-      ...staticAnalysis.vulnerabilities,
-    ];
+    const combinedVulnerabilities = dedupeByKey(
+      [...pythonVulnerabilities, ...staticAnalysis.vulnerabilities],
+      (v: any) => `${v.type}:${v.file ?? v.affectedFile ?? ""}:${v.line ?? 0}:${v.description ?? ""}`,
+    );
 
     console.log("");
     console.log("========== STATIC ANALYSIS ==========");
@@ -295,7 +352,7 @@ export async function runScanPipeline(
       staticAnalysis.secrets.length,
     );
     console.log(
-      "Total secrets:",
+      "Total secrets (deduped):",
       combinedSecrets.length,
     );
     console.log(
@@ -307,7 +364,7 @@ export async function runScanPipeline(
       staticAnalysis.dangerous.length,
     );
     console.log(
-      "Total dangerous:",
+      "Total dangerous (deduped):",
       combinedDangerous.length,
     );
     console.log(
@@ -319,7 +376,7 @@ export async function runScanPipeline(
       staticAnalysis.vulnerabilities.length,
     );
     console.log(
-      "Total vulnerabilities:",
+      "Total vulnerabilities (deduped):",
       combinedVulnerabilities.length,
     );
     console.log("====================================");
@@ -333,7 +390,7 @@ export async function runScanPipeline(
       .where(eq(scanResultsTable.id, scanId));
 
     // ==========================================
-    // 7. HARD-CODED SECRETS
+    // 8. HARD-CODED SECRETS
     // ==========================================
 
     if (combinedSecrets.length > 0) {
@@ -355,7 +412,7 @@ export async function runScanPipeline(
     }
 
     // ==========================================
-    // 8. DANGEROUS FUNCTIONS
+    // 9. DANGEROUS FUNCTIONS
     // ==========================================
 
     if (combinedDangerous.length > 0) {
@@ -381,7 +438,7 @@ export async function runScanPipeline(
     }
 
     // ==========================================
-    // 9. VULNERABILITIES
+    // 10. VULNERABILITIES
     // ==========================================
 
     if (combinedVulnerabilities.length > 0) {
@@ -411,7 +468,7 @@ export async function runScanPipeline(
     }
 
     // ==========================================
-    // 10. CVE MATCHING
+    // 11. CVE MATCHING
     // ==========================================
 
     const cveMatches =
@@ -449,7 +506,7 @@ export async function runScanPipeline(
       .where(eq(scanResultsTable.id, scanId));
 
     // ==========================================
-    // 11. MALWARE ANALYSIS
+    // 12. MALWARE ANALYSIS
     // ==========================================
 
     let malwareResults =
@@ -504,10 +561,15 @@ export async function runScanPipeline(
       );
     }
 
+    /*
+     * Count as malicious if flagged explicitly, OR if the threat
+     * score is high enough even when isMalicious wasn't set true
+     * (e.g. local heuristic scored "suspicious" at 65-69).
+     */
     const malwareCount =
       malwareResults.filter(
         (malware: any) =>
-          malware.isMalicious === true,
+          malware.isMalicious === true || (malware.threatScore ?? 0) >= 70,
       ).length;
 
     console.log("");
@@ -524,10 +586,11 @@ export async function runScanPipeline(
     console.log("");
 
     // ==========================================
-    // 12. EMULATION
+    // 13. EMULATION
     // ==========================================
 
     let emulation: any = null;
+    let emulationFailed = false;
 
     try {
       emulation = await runEmulation(
@@ -556,6 +619,7 @@ export async function runScanPipeline(
         });
       }
     } catch (error) {
+      emulationFailed = true;
       logger.warn(
         {
           err: error,
@@ -573,8 +637,10 @@ export async function runScanPipeline(
       .where(eq(scanResultsTable.id, scanId));
 
     // ==========================================
-    // 13. SBOM
+    // 14. SBOM
     // ==========================================
+
+    let sbomFailed = false;
 
     try {
       await generateSbomReport(
@@ -582,6 +648,7 @@ export async function runScanPipeline(
         extractPath,
       );
     } catch (error) {
+      sbomFailed = true;
       logger.warn(
         {
           err: error,
@@ -592,10 +659,11 @@ export async function runScanPipeline(
     }
 
     // ==========================================
-    // 14. AI REPORT
+    // 15. AI REPORT
     // ==========================================
 
     let aiReport: any = null;
+    let aiReportFailed = false;
 
     try {
       aiReport = await generateAiReport({
@@ -710,6 +778,7 @@ export async function runScanPipeline(
           });
       }
     } catch (error) {
+      aiReportFailed = true;
       logger.warn(
         {
           err: error,
@@ -720,25 +789,54 @@ export async function runScanPipeline(
     }
 
     // ==========================================
-    // 15. CALCULATE RISK
+    // 16. CALCULATE RISK (secrets + dangerous
+    //     functions + vulnerabilities + CVEs +
+    //     malware, all combined)
     // ==========================================
 
-    const criticalCount =
-      combinedVulnerabilities.filter(
-        (vulnerability: any) =>
-          vulnerability.severity ===
-          "critical",
-      ).length;
+    const criticalVulnCount = combinedVulnerabilities.filter(
+      (v: any) => v.severity === "critical",
+    ).length;
 
-    const riskLevel =
-      computeRiskLevel(
-        combinedVulnerabilities.length,
-        criticalCount,
-        malwareCount,
-      );
+    const highVulnCount = combinedVulnerabilities.filter(
+      (v: any) => v.severity === "high",
+    ).length;
+
+    const criticalSecretsCount = combinedSecrets.filter(
+      (s: any) => (s.severity ?? "high") === "critical",
+    ).length;
+
+    const cveCriticalCount = cveMatches.filter(
+      (c) => c.severity === "critical",
+    ).length;
+
+    const cveHighCount = cveMatches.filter(
+      (c) => c.severity === "high",
+    ).length;
+
+    const riskLevel = computeRiskLevel({
+      vulnCount: combinedVulnerabilities.length,
+      criticalVulnCount,
+      highVulnCount,
+      secretsCount: combinedSecrets.length,
+      criticalSecretsCount,
+      dangerousFunctionsCount: combinedDangerous.length,
+      cveCriticalCount,
+      cveHighCount,
+      malwareCount,
+    });
+
+    // "Total findings" across every category — replaces the old
+    // misleading vulnerabilitiesFound-only count.
+    const totalFindings =
+      combinedVulnerabilities.length +
+      combinedSecrets.length +
+      combinedDangerous.length +
+      cveMatches.length +
+      malwareCount;
 
     // ==========================================
-    // 16. COMPLETE SCAN
+    // 17. COMPLETE SCAN
     // ==========================================
 
     await db
@@ -750,13 +848,13 @@ export async function runScanPipeline(
         totalFiles:
           extraction.files.length,
         vulnerabilitiesFound:
-          combinedVulnerabilities.length,
+          totalFindings,
         riskLevel,
       })
       .where(eq(scanResultsTable.id, scanId));
 
     // ==========================================
-    // 17. MARK FIRMWARE COMPLETED
+    // 18. MARK FIRMWARE COMPLETED
     // ==========================================
 
     await db
@@ -771,7 +869,7 @@ export async function runScanPipeline(
       .where(eq(firmwareTable.id, firmwareId));
 
     // ==========================================
-    // 18. ACTIVITY LOG
+    // 19. ACTIVITY LOG
     // ==========================================
 
     await db.insert(activityTable).values({
@@ -779,8 +877,13 @@ export async function runScanPipeline(
 
       message:
         `Scan completed: ${combinedVulnerabilities.length} vulnerabilities, ` +
+        `${combinedSecrets.length} secrets, ` +
+        `${combinedDangerous.length} dangerous functions, ` +
         `${cveMatches.length} CVEs, ` +
-        `risk ${riskLevel.toUpperCase()}`,
+        `risk ${riskLevel.toUpperCase()}` +
+        (aiReportFailed ? " (AI report unavailable)" : "") +
+        (emulationFailed ? " (emulation failed)" : "") +
+        (sbomFailed ? " (SBOM failed)" : ""),
 
       severity:
         riskLevel === "critical"
@@ -794,7 +897,7 @@ export async function runScanPipeline(
     });
 
     // ==========================================
-    // 19. MALWARE ACTIVITY
+    // 20. MALWARE ACTIVITY
     // ==========================================
 
     if (malwareCount > 0) {
@@ -834,6 +937,14 @@ export async function runScanPipeline(
       extraction.files.length,
     );
     console.log(
+      "Secrets        :",
+      combinedSecrets.length,
+    );
+    console.log(
+      "Dangerous fns  :",
+      combinedDangerous.length,
+    );
+    console.log(
       "Vulnerabilities:",
       combinedVulnerabilities.length,
     );
@@ -856,43 +967,3 @@ export async function runScanPipeline(
       {
         err,
         firmwareId,
-        scanId,
-      },
-      "Scan pipeline failed",
-    );
-
-    await db
-      .update(scanResultsTable)
-      .set({
-        status: "failed",
-        progress: 100,
-      })
-      .where(eq(scanResultsTable.id, scanId));
-
-    await db
-      .update(firmwareTable)
-      .set({
-        status: "failed",
-      })
-      .where(eq(firmwareTable.id, firmwareId));
-
-    try {
-      await db.insert(activityTable).values({
-        type: "scan_completed",
-        message:
-          `Scan failed for firmware ID ${firmwareId}`,
-        severity: "high",
-        firmwareId,
-        firmwareName: fw.name,
-      });
-    } catch (activityError) {
-      logger.error(
-        {
-          err: activityError,
-          firmwareId,
-        },
-        "Failed to create scan failure activity",
-      );
-    }
-  }
-}
