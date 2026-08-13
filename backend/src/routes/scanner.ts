@@ -1,89 +1,524 @@
-import { Router, type IRouter } from "express";
-import { db, scanResultsTable, firmwareTable, activityTable, extractedFilesTable } from "@workspace/db";
+import {
+  Router,
+  type IRouter,
+} from "express";
+
+import {
+  db,
+  scanResultsTable,
+  firmwareTable,
+  activityTable,
+  extractedFilesTable,
+} from "@workspace/db";
+
 import { eq } from "drizzle-orm";
+
 import { runScanPipeline } from "../services/scan-pipeline.js";
-import { analyzeBinary, pickBinaryTarget } from "../services/binary-analyzer.js";
+import {
+  analyzeBinary,
+  pickBinaryTarget,
+} from "../services/binary-analyzer.js";
 
-const router: IRouter = Router();
+const router: IRouter =
+  Router();
 
-router.post("/scanner/start", async (req, res): Promise<void> => {
-  const { firmwareId } = req.body;
-  if (!firmwareId) { res.status(400).json({ error: "Missing firmwareId" }); return; }
+/*
+ * ============================================================
+ * START SCAN
+ * ============================================================
+ */
 
-  const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, firmwareId));
-  if (!fw) { res.status(404).json({ error: "Firmware not found" }); return; }
-  if (!fw.filePath) {
-    res.status(400).json({ error: "Firmware file not uploaded. Use /firmware/upload with a binary file." });
-    return;
-  }
+router.post(
+  "/scanner/start",
+  async (
+    req,
+    res,
+  ): Promise<void> => {
+    try {
+      const {
+        firmwareId,
+      } = req.body;
 
-  await db.update(firmwareTable).set({ status: "scanning" }).where(eq(firmwareTable.id, firmwareId));
+      const parsedFirmwareId =
+        Number(firmwareId);
 
-  const [scan] = await db.insert(scanResultsTable).values({
-    firmwareId,
-    status: "running",
-    progress: 0,
-  }).returning();
+      if (
+        !Number.isInteger(
+          parsedFirmwareId,
+        ) ||
+        parsedFirmwareId <= 0
+      ) {
+        res.status(400).json({
+          error:
+            "Invalid firmwareId",
+        });
 
-  await db.insert(activityTable).values({
-    type: "scan_started",
-    message: `Scan initiated for ${fw.name}`,
-    severity: "info",
-    firmwareId,
-    firmwareName: fw.name,
-  });
+        return;
+      }
 
-  // Run pipeline async — don't block response
-  void runScanPipeline(firmwareId, scan.id);
+      /*
+       * Get firmware.
+       */
 
-  res.status(201).json({
-    id: scan.id,
-    firmwareId: scan.firmwareId,
-    startedAt: scan.startedAt.toISOString(),
-    completedAt: null,
-    status: scan.status,
-    progress: scan.progress,
-    totalFiles: null,
-    vulnerabilitiesFound: null,
-    riskLevel: null,
-  });
-});
+      const [fw] =
+        await db
+          .select()
+          .from(firmwareTable)
+          .where(
+            eq(
+              firmwareTable.id,
+              parsedFirmwareId,
+            ),
+          );
 
-router.get("/scanner/results/:firmwareId", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.firmwareId) ? req.params.firmwareId[0] : req.params.firmwareId;
-  const firmwareId = parseInt(raw, 10);
-  if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
-  const results = await db.select().from(scanResultsTable).where(eq(scanResultsTable.firmwareId, firmwareId));
-  res.json(results.map(r => ({
-    ...r,
-    startedAt: r.startedAt.toISOString(),
-    completedAt: r.completedAt ? r.completedAt.toISOString() : null,
-  })));
-});
+      if (!fw) {
+        res.status(404).json({
+          error:
+            "Firmware not found",
+        });
 
-router.get("/scanner/files/:firmwareId", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.firmwareId) ? req.params.firmwareId[0] : req.params.firmwareId;
-  const firmwareId = parseInt(raw, 10);
-  if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
-  const files = await db.select().from(extractedFilesTable).where(eq(extractedFilesTable.firmwareId, firmwareId));
-  res.json(files);
-});
+        return;
+      }
 
-router.post("/scanner/binary/:firmwareId", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.firmwareId) ? req.params.firmwareId[0] : req.params.firmwareId;
-  const firmwareId = parseInt(raw, 10);
-  if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
+      /*
+       * A file must have been uploaded.
+       */
 
-  const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, firmwareId));
-  if (!fw?.filePath) { res.status(404).json({ error: "Firmware file not found" }); return; }
+      if (!fw.filePath) {
+        res.status(400).json({
+          error:
+            "Firmware file not uploaded. Use /firmware/upload first.",
+        });
 
-  const { filePath: reqPath } = req.body;
-  const target = reqPath
-    ? `${fw.extractPath ?? ""}${reqPath}`.replace(/\/\//g, "/")
-    : pickBinaryTarget(fw.extractPath ?? "", [fw.filePath]) ?? fw.filePath;
+        return;
+      }
 
-  const result = await analyzeBinary(firmwareId, target);
-  res.json(result);
-});
+      /*
+       * Prevent starting two scans for the same
+       * firmware simultaneously.
+       */
+
+      const existingScans =
+        await db
+          .select()
+          .from(scanResultsTable)
+          .where(
+            eq(
+              scanResultsTable.firmwareId,
+              parsedFirmwareId,
+            ),
+          );
+
+      const runningScan =
+        existingScans.find(
+          (scan) =>
+            scan.status ===
+              "running" ||
+            scan.status ===
+              "pending",
+        );
+
+      if (runningScan) {
+        res.status(409).json({
+          error:
+            "A scan is already running for this firmware.",
+          scanId:
+            runningScan.id,
+        });
+
+        return;
+      }
+
+      /*
+       * Mark firmware scanning.
+       */
+
+      await db
+        .update(firmwareTable)
+        .set({
+          status:
+            "scanning",
+        })
+        .where(
+          eq(
+            firmwareTable.id,
+            parsedFirmwareId,
+          ),
+        );
+
+      /*
+       * Create scan record.
+       */
+
+      const [scan] =
+        await db
+          .insert(
+            scanResultsTable,
+          )
+          .values({
+            firmwareId:
+              parsedFirmwareId,
+
+            status:
+              "running",
+
+            progress: 0,
+          })
+          .returning();
+
+      /*
+       * Activity.
+       */
+
+      await db
+        .insert(activityTable)
+        .values({
+          type:
+            "scan_started",
+
+          message:
+            `Scan initiated for ${fw.name}`,
+
+          severity:
+            "info",
+
+          firmwareId:
+            parsedFirmwareId,
+
+          firmwareName:
+            fw.name,
+        });
+
+      /*
+       * Start asynchronously.
+       *
+       * IMPORTANT:
+       * We deliberately do not await this.
+       */
+
+      void runScanPipeline(
+        parsedFirmwareId,
+        scan.id,
+      ).catch(
+        (error) => {
+          console.error(
+            "[Scanner Pipeline Unhandled Error]",
+            error,
+          );
+        },
+      );
+
+      /*
+       * Return immediately.
+       */
+
+      res
+        .status(201)
+        .json({
+          id: scan.id,
+
+          firmwareId:
+            scan.firmwareId,
+
+          startedAt:
+            scan.startedAt.toISOString(),
+
+          completedAt:
+            null,
+
+          status:
+            scan.status,
+
+          progress:
+            scan.progress,
+
+          totalFiles:
+            null,
+
+          vulnerabilitiesFound:
+            null,
+
+          riskLevel:
+            null,
+        });
+    } catch (error) {
+      console.error(
+        "[Scanner Start Error]",
+        error,
+      );
+
+      res.status(500).json({
+        error:
+          "Failed to start scanner",
+        details:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      });
+    }
+  },
+);
+
+/*
+ * ============================================================
+ * GET SCAN RESULTS
+ * ============================================================
+ */
+
+router.get(
+  "/scanner/results/:firmwareId",
+  async (
+    req,
+    res,
+  ): Promise<void> => {
+    try {
+      const raw =
+        Array.isArray(
+          req.params.firmwareId,
+        )
+          ? req.params.firmwareId[0]
+          : req.params.firmwareId;
+
+      const firmwareId =
+        parseInt(
+          raw,
+          10,
+        );
+
+      if (
+        isNaN(firmwareId)
+      ) {
+        res.status(400).json({
+          error:
+            "Invalid firmwareId",
+        });
+
+        return;
+      }
+
+      const results =
+        await db
+          .select()
+          .from(
+            scanResultsTable,
+          )
+          .where(
+            eq(
+              scanResultsTable.firmwareId,
+              firmwareId,
+            ),
+          );
+
+      res.json(
+        results.map(
+          (result) => ({
+            ...result,
+
+            startedAt:
+              result.startedAt.toISOString(),
+
+            completedAt:
+              result.completedAt
+                ? result.completedAt.toISOString()
+                : null,
+          }),
+        ),
+      );
+    } catch (error) {
+      console.error(
+        "[Scanner Results Error]",
+        error,
+      );
+
+      res.status(500).json({
+        error:
+          "Failed to fetch scan results",
+      });
+    }
+  },
+);
+
+/*
+ * ============================================================
+ * GET EXTRACTED FILES
+ * ============================================================
+ */
+
+router.get(
+  "/scanner/files/:firmwareId",
+  async (
+    req,
+    res,
+  ): Promise<void> => {
+    try {
+      const raw =
+        Array.isArray(
+          req.params.firmwareId,
+        )
+          ? req.params.firmwareId[0]
+          : req.params.firmwareId;
+
+      const firmwareId =
+        parseInt(
+          raw,
+          10,
+        );
+
+      if (
+        isNaN(firmwareId)
+      ) {
+        res.status(400).json({
+          error:
+            "Invalid firmwareId",
+        });
+
+        return;
+      }
+
+      const files =
+        await db
+          .select()
+          .from(
+            extractedFilesTable,
+          )
+          .where(
+            eq(
+              extractedFilesTable.firmwareId,
+              firmwareId,
+            ),
+          );
+
+      res.json(files);
+    } catch (error) {
+      console.error(
+        "[Scanner Files Error]",
+        error,
+      );
+
+      res.status(500).json({
+        error:
+          "Failed to fetch extracted files",
+      });
+    }
+  },
+);
+
+/*
+ * ============================================================
+ * ANALYZE ONE BINARY
+ * ============================================================
+ */
+
+router.post(
+  "/scanner/binary/:firmwareId",
+  async (
+    req,
+    res,
+  ): Promise<void> => {
+    try {
+      const raw =
+        Array.isArray(
+          req.params.firmwareId,
+        )
+          ? req.params.firmwareId[0]
+          : req.params.firmwareId;
+
+      const firmwareId =
+        parseInt(
+          raw,
+          10,
+        );
+
+      if (
+        isNaN(firmwareId)
+      ) {
+        res.status(400).json({
+          error:
+            "Invalid firmwareId",
+        });
+
+        return;
+      }
+
+      const [fw] =
+        await db
+          .select()
+          .from(
+            firmwareTable,
+          )
+          .where(
+            eq(
+              firmwareTable.id,
+              firmwareId,
+            ),
+          );
+
+      if (
+        !fw?.filePath
+      ) {
+        res.status(404).json({
+          error:
+            "Firmware file not found",
+        });
+
+        return;
+      }
+
+      const {
+        filePath:
+          requestedPath,
+      } = req.body ?? {};
+
+      let target: string;
+
+      if (requestedPath) {
+        const extractPath =
+          fw.extractPath ??
+          "";
+
+        target =
+          `${extractPath}/${requestedPath}`
+            .replace(
+              /\\/g,
+              "/",
+            )
+            .replace(
+              /\/+/g,
+              "/",
+            );
+      } else {
+        target =
+          pickBinaryTarget(
+            fw.extractPath ??
+              "",
+            [fw.filePath],
+          ) ??
+          fw.filePath;
+      }
+
+      const result =
+        await analyzeBinary(
+          firmwareId,
+          target,
+        );
+
+      res.json(result);
+    } catch (error) {
+      console.error(
+        "[Binary Analysis Error]",
+        error,
+      );
+
+      res.status(500).json({
+        error:
+          "Binary analysis failed",
+        details:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      });
+    }
+  },
+);
 
 export default router;
