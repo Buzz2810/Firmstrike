@@ -1,9 +1,10 @@
-node_modules
-.env
-out.pdf
-
 # Dependencies
 node_modules/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
 
 # Build output
 dist/
@@ -12,7 +13,16 @@ build/
 # TypeScript build info
 *.tsbuildinfo
 
-# Environment files
-.env
-.env.*
-!.env.example
+# Python
+__pycache__/
+*.py[cod]
+
+# Temporary files
+body.json
+out.pdf
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

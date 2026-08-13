@@ -1,1 +1,0 @@
-{"version":3,"file":"cvssBreakdown.d.ts","sourceRoot":"","sources":["../../../src/generated/types/cvssBreakdown.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,WAAW,aAAa;IAC5B,UAAU,EAAE,MAAM,CAAC;IACnB,QAAQ,EAAE,MAAM,CAAC;IACjB,IAAI,EAAE,MAAM,CAAC;IACb,MAAM,EAAE,MAAM,CAAC;IACf,GAAG,EAAE,MAAM,CAAC;IACZ,YAAY,EAAE,MAAM,CAAC;CACtB"}
