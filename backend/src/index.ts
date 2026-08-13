@@ -3,7 +3,7 @@ import path from "node:path";
 
 // Load .env first
 dotenv.config({
-  path: path.resolve(process.cwd(), "../../.env"),
+  path: path.resolve(process.cwd(), ".env"),
 });
 console.log("Working directory:", process.cwd());
 console.log("Env path:", path.resolve(process.cwd(), ".env"));
