@@ -227,10 +227,10 @@ Run the frontend and API server in separate terminals:
 
 ```bash
 # Terminal 1 — API server (http://localhost:8080)
-pnpm --filter @workspace/api-server run dev
+pnpm --filter @workspace/backend run dev
 
 # Terminal 2 — React frontend (http://localhost:25439)
-pnpm --filter @workspace/viv-scanner run dev
+pnpm --filter @workspace/frontend run dev
 ```
 
 Then open **http://localhost:25439** in your browser.
@@ -244,8 +244,8 @@ Then open **http://localhost:25439** in your browser.
 | `pnpm install` | Install all workspace dependencies |
 | `pnpm run typecheck` | Typecheck every package in the workspace |
 | `pnpm run build` | Typecheck, then build all packages |
-| `pnpm --filter @workspace/api-server run dev` | Start the Express API server in dev mode |
-| `pnpm --filter @workspace/viv-scanner run dev` | Start the React frontend in dev mode |
+| `pnpm --filter @workspace/backend run dev` | Start the Express API server in dev mode |
+| `pnpm --filter @workspace/frontend run dev` | Start the React frontend in dev mode |
 | `pnpm --filter @workspace/api-spec run codegen` | Regenerate API hooks & Zod schemas from `openapi.yaml` |
 | `pnpm --filter @workspace/db run push` | Push Drizzle schema changes to the database (dev only) |
 
@@ -271,7 +271,7 @@ Then open **http://localhost:25439** in your browser.
 
 ## 🔌 API Overview
 
-All backend routes are namespaced under `/api/` and grouped by domain in `artifacts/api-server/src/routes/`:
+All backend routes are namespaced under `/api/` and grouped by domain in `backend/src/routes/`:
 
 | Route file | Responsibility |
 |---|---|

@@ -4,8 +4,8 @@ A full-stack cybersecurity firmware analysis platform — upload firmware images
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
-- `pnpm --filter @workspace/viv-scanner run dev` — run the React frontend (port 25439)
+- `pnpm --filter @workspace/backend run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/frontend run dev` — run the React frontend (port 25439)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -24,10 +24,10 @@ A full-stack cybersecurity firmware analysis platform — upload firmware images
 
 ## Where things live
 
-- `artifacts/viv-scanner/` — React frontend (cyberpunk dark theme)
+- `frontend/` — React frontend (cyberpunk dark theme)
   - `src/pages/` — 10 pages: Dashboard, FirmwareLibrary, ScanDetails, SecurityAnalysis, CveIntelligence, MalwareDetection, QemuEmulation, ReportsAi, Login, Register
   - `src/components/` — Layout.tsx (sidebar + main), theme-provider.tsx, shadcn/ui components
-- `artifacts/api-server/src/routes/` — Express routes: auth, firmware, scanner, security, cve, malware, qemu, reports, dashboard
+- `backend/src/routes/` — Express routes: auth, firmware, scanner, security, cve, malware, qemu, reports, dashboard
 - `lib/api-spec/openapi.yaml` — OpenAPI contract (source of truth for all endpoints)
 - `lib/api-client-react/` — Generated React Query hooks + Zod schemas (from Orval codegen)
 - `lib/db/src/schema/` — Drizzle ORM schema (users, firmware, scans, security, index)
