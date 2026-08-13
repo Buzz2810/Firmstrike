@@ -966,4 +966,4 @@ export async function runScanPipeline(
     logger.error(
       {
         err,
-        firmwareId,
+        firmwareId,})}}
