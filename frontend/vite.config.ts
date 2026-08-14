@@ -1,11 +1,15 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import path from "path";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-export default defineConfig(async ({ mode }) => {
-  // Load environment variables from the project root
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default defineConfig(({ mode }) => {
+  // Load environment variables from the frontend project root
   const env = loadEnv(mode, process.cwd(), "");
 
   const port = Number(env.VITE_PORT || env.PORT || 25439);
@@ -25,34 +29,33 @@ export default defineConfig(async ({ mode }) => {
       react(),
       tailwindcss(),
       runtimeErrorOverlay(),
-      ...(process.env.NODE_ENV !== "production" &&
-      process.env.REPL_ID !== undefined
-        ? [
-            (await import("@replit/vite-plugin-cartographer")).cartographer({
-              root: path.resolve(import.meta.dirname, ".."),
-            }),
-            (await import("@replit/vite-plugin-dev-banner")).devBanner(),
-          ]
-        : []),
     ],
 
     resolve: {
       alias: {
-        "@": path.resolve(import.meta.dirname, "src"),
+        "@": path.resolve(__dirname, "src"),
+
+        "@workspace/api-client-react": path.resolve(
+          __dirname,
+          "api-client",
+          "src",
+          "index.ts",
+        ),
+
         "@assets": path.resolve(
-          import.meta.dirname,
-          "..",
+          __dirname,
           "..",
           "attached_assets",
         ),
       },
+
       dedupe: ["react", "react-dom"],
     },
 
-    root: path.resolve(import.meta.dirname),
+    root: __dirname,
 
     build: {
-      outDir: path.resolve(import.meta.dirname, "dist/public"),
+      outDir: path.resolve(__dirname, "dist/public"),
       emptyOutDir: true,
     },
 
@@ -61,12 +64,15 @@ export default defineConfig(async ({ mode }) => {
       strictPort: true,
       host: "0.0.0.0",
       allowedHosts: true,
+
       fs: {
         strict: true,
       },
+
       proxy: {
-        "/api": {
-          target: env.API_PROXY_TARGET ?? "http://localhost:8080",
+        "/api/": {
+          target:
+            env.API_PROXY_TARGET ?? "http://localhost:8080",
           changeOrigin: true,
           timeout: 0,
           proxyTimeout: 0,
@@ -78,9 +84,11 @@ export default defineConfig(async ({ mode }) => {
       port,
       host: "0.0.0.0",
       allowedHosts: true,
+
       proxy: {
-        "/api": {
-          target: env.API_PROXY_TARGET ?? "http://localhost:8080",
+        "/api/": {
+          target:
+            env.API_PROXY_TARGET ?? "http://localhost:8080",
           changeOrigin: true,
           timeout: 0,
           proxyTimeout: 0,

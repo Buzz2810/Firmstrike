@@ -36,10 +36,11 @@ minimumReleaseAgeExclude:
 
 packages:
   - frontend
+  - frontend/api-client
   - backend
-  - lib/*
-  - lib/integrations/*
-  - scripts
+  - backend/api-zod
+  - backend/db
+  - backend/api-spec
 
 catalog:
   '@replit/vite-plugin-cartographer': ^0.5.1
