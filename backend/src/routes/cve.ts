@@ -3,6 +3,7 @@ import { db, cveMatchesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
+
 function parseFirmwareId(raw: string | string[]): number | null {
   const value = Array.isArray(raw) ? raw[0] : raw;
   const firmwareId = parseInt(value, 10);
@@ -11,10 +12,19 @@ function parseFirmwareId(raw: string | string[]): number | null {
 }
 
 async function getMatchesForFirmware(firmwareId: number) {
-  return db
+  const rawMatches = await db
     .select()
     .from(cveMatchesTable)
     .where(eq(cveMatchesTable.firmwareId, firmwareId));
+
+  const map = new Map<string, typeof rawMatches[0]>();
+  for (const m of rawMatches) {
+    if (!map.has(m.cveId)) {
+      map.set(m.cveId, m);
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 router.get("/cve/matches/:firmwareId", async (req, res): Promise<void> => {
@@ -50,6 +60,7 @@ router.get("/cve/scores/:firmwareId", async (req, res): Promise<void> => {
       matches.length > 0
         ? matches.reduce((sum, m) => sum + Number(m.cvssScore), 0) / matches.length
         : 0;
+
     res.json({
       firmwareId,
       critical,

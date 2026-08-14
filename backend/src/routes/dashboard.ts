@@ -8,13 +8,27 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
   const allFirmware = await db.select().from(firmwareTable);
   const allScans = await db.select().from(scanResultsTable);
   const allVulns = await db.select().from(vulnerabilitiesTable);
-  const allHashes = await db.select().from(malwareHashesTable);
-  const allCves = await db.select().from(cveMatchesTable);
+  const rawHashes = await db.select().from(malwareHashesTable);
+  const rawCves = await db.select().from(cveMatchesTable);
 
-  const criticalVulns = allVulns.filter(v => v.severity === "critical").length;
-  const highVulns = allVulns.filter(v => v.severity === "high").length;
-  const maliciousFiles = allHashes.filter(h => h.isMalicious).length;
-  const avgScore = allHashes.length > 0 ? Math.round(allHashes.reduce((s, h) => s + h.threatScore, 0) / allHashes.length) : 0;
+  const hashHashMap = new Map<string, typeof rawHashes[0]>();
+  for (const h of rawHashes) {
+    const key = `${h.firmwareId}:${h.sha256 || h.fileName}`;
+    if (!hashHashMap.has(key)) hashHashMap.set(key, h);
+  }
+  const allHashes = Array.from(hashHashMap.values());
+
+  const cveMap = new Map<string, typeof rawCves[0]>();
+  for (const c of rawCves) {
+    const key = `${c.firmwareId}:${c.cveId}`;
+    if (!cveMap.has(key)) cveMap.set(key, c);
+  }
+  const allCves = Array.from(cveMap.values());
+
+  const criticalVulns = allVulns.filter(v => v.severity === "critical").length + allCves.filter(c => c.severity === "critical").length;
+  const highVulns = allVulns.filter(v => v.severity === "high").length + allCves.filter(c => c.severity === "high").length;
+  const maliciousFiles = allHashes.filter(h => h.isMalicious || (h.threatScore ?? 0) >= 70).length;
+  const avgScore = allHashes.length > 0 ? Math.round(allHashes.reduce((s, h) => s + (h.threatScore ?? 0), 0) / allHashes.length) : 0;
   const activeScans = allScans.filter(s => s.status === "running").length;
 
   res.json({
@@ -48,25 +62,40 @@ router.get("/dashboard/activity", async (_req, res): Promise<void> => {
 
 router.get("/dashboard/risk-distribution", async (_req, res): Promise<void> => {
   const vulns = await db.select().from(vulnerabilitiesTable);
-  const critical = vulns.filter(v => v.severity === "critical").length;
-  const high = vulns.filter(v => v.severity === "high").length;
-  const medium = vulns.filter(v => v.severity === "medium").length;
-  const low = vulns.filter(v => v.severity === "low").length;
-  res.json({ critical, high, medium, low, total: vulns.length });
+  const rawCves = await db.select().from(cveMatchesTable);
+  const rawHashes = await db.select().from(malwareHashesTable);
+
+  const cveMap = new Map<string, typeof rawCves[0]>();
+  for (const c of rawCves) {
+    const key = `${c.firmwareId}:${c.cveId}`;
+    if (!cveMap.has(key)) cveMap.set(key, c);
+  }
+  const cves = Array.from(cveMap.values());
+
+  const hashHashMap = new Map<string, typeof rawHashes[0]>();
+  for (const h of rawHashes) {
+    const key = `${h.firmwareId}:${h.sha256 || h.fileName}`;
+    if (!hashHashMap.has(key)) hashHashMap.set(key, h);
+  }
+  const malware = Array.from(hashHashMap.values());
+
+  const critical = vulns.filter(v => v.severity === "critical").length + cves.filter(c => c.severity === "critical").length + malware.filter(m => m.isMalicious || m.threatScore >= 70).length;
+  const high = vulns.filter(v => v.severity === "high").length + cves.filter(c => c.severity === "high").length + malware.filter(m => !m.isMalicious && m.threatScore >= 50 && m.threatScore < 70).length;
+  const medium = vulns.filter(v => v.severity === "medium").length + cves.filter(c => c.severity === "medium").length + malware.filter(m => m.threatScore >= 30 && m.threatScore < 50).length;
+  const low = vulns.filter(v => v.severity === "low").length + cves.filter(c => c.severity === "low").length + malware.filter(m => m.threatScore > 0 && m.threatScore < 30).length;
+
+  res.json({ critical, high, medium, low, total: critical + high + medium + low });
 });
 
 router.get("/dashboard/threat-trend", async (_req, res): Promise<void> => {
-  // Fetch all completed scans with vulnerability data
   const allScans = await db.select().from(scanResultsTable);
 
-  // Convert riskLevel to a numeric threat score
   function riskToScore(riskLevel: string | null, vulnCount: number | null): number {
     const base = riskLevel === "critical" ? 80 : riskLevel === "high" ? 55 : riskLevel === "medium" ? 35 : 10;
     const bonus = Math.min(20, Math.floor((vulnCount ?? 0) * 2));
     return Math.min(100, base + bonus);
   }
 
-  // Group scans by calendar date (UTC)
   const scansByDate = new Map<string, typeof allScans>();
   for (const s of allScans) {
     const dateStr = s.startedAt.toISOString().split("T")[0];
@@ -75,7 +104,6 @@ router.get("/dashboard/threat-trend", async (_req, res): Promise<void> => {
     scansByDate.set(dateStr, existing);
   }
 
-  // Build 14-day window
   const trend = [];
   const now = new Date();
   for (let i = 13; i >= 0; i--) {

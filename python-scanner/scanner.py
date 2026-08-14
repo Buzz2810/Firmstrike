@@ -231,50 +231,9 @@ def extract_ascii_strings(
     data: bytes,
     minimum_length: int = 4,
 ) -> list[str]:
-    results: list[str] = []
-
-    current = bytearray()
-
-    for byte in data:
-        if 32 <= byte <= 126:
-            current.append(byte)
-
-            if len(current) >= 500:
-                results.append(
-                    current.decode(
-                        "ascii",
-                        errors="ignore",
-                    )
-                )
-
-                current.clear()
-
-        else:
-            if (
-                len(current)
-                >= minimum_length
-            ):
-                results.append(
-                    current.decode(
-                        "ascii",
-                        errors="ignore",
-                    )
-                )
-
-            current.clear()
-
-    if (
-        len(current)
-        >= minimum_length
-    ):
-        results.append(
-            current.decode(
-                "ascii",
-                errors="ignore",
-            )
-        )
-
-    return results
+    sample_data = data[: 64 * 1024 * 1024]
+    pattern = re.compile(rb"[ -~]{" + str(minimum_length).encode() + rb",500}")
+    return [match.group(0).decode("ascii", errors="ignore") for match in pattern.finditer(sample_data)][:20000]
 
 
 def detect_format(
@@ -566,14 +525,24 @@ def detect_components(
         if component in haystack:
             found.add(component)
 
-    openssl_versions = re.findall(
+    version_patterns = [
         r"OpenSSL\s+[\d.]+[a-z]?",
-        text,
-        re.IGNORECASE,
-    )
+        r"BusyBox\s+v?[\d.]+",
+        r"OpenSSH[_\s]+[\d.]+[a-z0-9]*",
+        r"Dropbear\s+v?[\d.]+",
+        r"lighttpd\/[\d.]+",
+        r"Apache\/[\d.]+",
+        r"dnsmasq-[\d.]+",
+    ]
 
-    for value in openssl_versions:
-        found.add(value)
+    for pattern in version_patterns:
+        matches = re.findall(
+            pattern,
+            text,
+            re.IGNORECASE,
+        )
+        for val in matches:
+            found.add(val.strip())
 
     return sorted(found)
 

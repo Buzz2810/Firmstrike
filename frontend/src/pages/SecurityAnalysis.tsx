@@ -75,7 +75,7 @@ export default function SecurityAnalysis() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4 mb-2">
-        <Link href={`/firmware`}>
+        <Link href={`/scan/${firmwareId}`}>
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
             <ChevronLeft className="w-4 h-4" />
           </Button>

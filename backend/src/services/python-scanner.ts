@@ -1,4 +1,8 @@
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const PYTHON_SCANNER_URL =
   process.env.PYTHON_SCANNER_URL ||
@@ -110,8 +114,73 @@ export type RunPythonScannerOptions = {
   extractPath: string;
 };
 
-function normalizeWindowsPath(value: string): string {
+function normalizePath(value: string): string {
   return path.resolve(value);
+}
+
+function processComponents(result: PythonScannerResult) {
+  const sbomComponents = result.sbom?.components ?? [];
+  const metaRaw = result.metadata?.components ?? [];
+
+  const metaParsed = metaRaw.map((item) => {
+    if (typeof item === "object" && item !== null) {
+      return {
+        name: item.name,
+        version: item.version ?? "unknown",
+        type: item.type ?? "component",
+        path: item.path ?? "/firmware.bin",
+        source: item.source ?? "python-scanner-metadata",
+      };
+    }
+
+    const str = String(item).trim();
+    const verMatch = str.match(/(\d+\.\d+(?:\.\d+)?)/);
+    const name = str.split(/\s+/)[0] || str;
+
+    return {
+      name,
+      version: verMatch ? verMatch[1] : "unknown",
+      type: "component",
+      path: "/firmware.bin",
+      source: "python-scanner-metadata",
+    };
+  });
+
+  const map = new Map<string, { name: string; version: string; type: string; path: string; source: string }>();
+
+  for (const c of [...sbomComponents, ...metaParsed]) {
+    const key = `${c.name.toLowerCase()}:${c.version}`;
+    if (!map.has(key)) {
+      map.set(key, c);
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+async function runDirectPythonScanner(
+  filePath: string,
+  extractPath: string,
+  firmwareId: number,
+  scanId: number,
+): Promise<PythonScannerResult> {
+  const pythonDir = path.resolve(process.cwd(), "python-scanner");
+
+  const pythonScript = `
+import json, sys
+sys.path.append('.')
+from scanner import scan_firmware
+
+res = scan_firmware(${JSON.stringify(filePath)}, ${JSON.stringify(extractPath)}, ${firmwareId}, ${scanId})
+print(json.dumps(res))
+`;
+
+  const { stdout } = await execFileAsync("python3", ["-c", pythonScript], {
+    cwd: pythonDir,
+    maxBuffer: 50 * 1024 * 1024,
+  });
+
+  return JSON.parse(stdout) as PythonScannerResult;
 }
 
 export async function runPythonScanner(
@@ -133,8 +202,8 @@ export async function runPythonScanner(
   extraction: PythonScannerResult["extraction"];
   sbom: PythonScannerResult["sbom"];
 }> {
-  const filePath = normalizeWindowsPath(options.filePath);
-  const extractPath = normalizeWindowsPath(options.extractPath);
+  const filePath = normalizePath(options.filePath);
+  const extractPath = normalizePath(options.extractPath);
 
   console.log("");
   console.log("========================================");
@@ -148,22 +217,16 @@ export async function runPythonScanner(
   console.log("========================================");
   console.log("");
 
-  const controller = new AbortController();
-
-  // Firmware extraction can take a long time.
-  const timeout = setTimeout(
-    () => controller.abort(),
-    30 * 60 * 1000,
-  );
+  let result: PythonScannerResult;
 
   try {
-    const response = await fetch(
-      `${PYTHON_SCANNER_URL}/scan`,
-      {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000);
+
+    try {
+      const response = await fetch(`${PYTHON_SCANNER_URL}/scan`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           firmwareId: options.firmwareId,
           scanId: options.scanId,
@@ -171,114 +234,61 @@ export async function runPythonScanner(
           extractPath,
         }),
         signal: controller.signal,
-      },
-    );
+      });
 
-    const raw = await response.text();
+      clearTimeout(timeout);
 
-    if (!response.ok) {
-      throw new Error(
-        `Python scanner returned HTTP ${response.status}: ${raw}`,
-      );
-    }
-
-    let result: PythonScannerResult;
-
-    try {
+      const raw = await response.text();
+      if (!response.ok) {
+        throw new Error(`Python scanner HTTP ${response.status}: ${raw}`);
+      }
       result = JSON.parse(raw);
-    } catch {
-      throw new Error(
-        `Python scanner returned invalid JSON: ${raw.slice(0, 1000)}`,
-      );
+    } catch (httpError) {
+      clearTimeout(timeout);
+      console.log("[Python Scanner] HTTP service not available on port 8010. Running scanner module directly via Python...");
+      result = await runDirectPythonScanner(filePath, extractPath, options.firmwareId, options.scanId);
     }
 
     if (!result.metadata) {
-      throw new Error(
-        "Python scanner response is missing metadata",
-      );
+      throw new Error("Python scanner response is missing metadata");
     }
+
+    const processedComponents = processComponents(result);
 
     console.log("");
     console.log("========================================");
     console.log("       PYTHON SCANNER RESULT");
     console.log("========================================");
-    console.log(
-      "Architecture :",
-      result.metadata.architecture,
-    );
-    console.log(
-      "Vendor       :",
-      result.metadata.vendor ?? "UNKNOWN",
-    );
-    console.log(
-      "Version      :",
-      result.metadata.version ?? "UNKNOWN",
-    );
-    console.log(
-      "Files        :",
-      result.files?.length ?? 0,
-    );
-    console.log(
-      "Secrets      :",
-      result.staticAnalysis?.secrets?.length ?? 0,
-    );
-    console.log(
-      "Dangerous    :",
-      result.staticAnalysis?.dangerous?.length ?? 0,
-    );
-    console.log(
-      "Malware      :",
-      result.malware?.length ?? 0,
-    );
+    console.log("Architecture :", result.metadata.architecture);
+    console.log("Vendor       :", result.metadata.vendor ?? "UNKNOWN");
+    console.log("Version      :", result.metadata.version ?? "UNKNOWN");
+    console.log("Components   :", processedComponents.length);
+    console.log("Files        :", result.files?.length ?? 0);
+    console.log("Secrets      :", result.staticAnalysis?.secrets?.length ?? 0);
+    console.log("Dangerous    :", result.staticAnalysis?.dangerous?.length ?? 0);
+    console.log("Malware      :", result.malware?.length ?? 0);
     console.log("========================================");
     console.log("");
 
     return {
-      architecture:
-        result.metadata.architecture || "UNKNOWN",
-
-      vendor:
-        result.metadata.vendor ?? null,
-
-      version:
-        result.metadata.version ?? null,
-
-      components:
-        result.sbom?.components ?? [],
-
-      files:
-        result.files ?? [],
-
-      staticAnalysis:
-        result.staticAnalysis ?? {
-          secrets: [],
-          dangerous: [],
-          vulnerabilities: [],
-        },
-
-      malware:
-        result.malware ?? [],
-
-      extraction:
-        result.extraction,
-
-      sbom:
-        result.sbom ?? {
-          components: [],
-        },
+      architecture: result.metadata.architecture || "UNKNOWN",
+      vendor: result.metadata.vendor ?? null,
+      version: result.metadata.version ?? null,
+      components: processedComponents,
+      files: result.files ?? [],
+      staticAnalysis: result.staticAnalysis ?? {
+        secrets: [],
+        dangerous: [],
+        vulnerabilities: [],
+      },
+      malware: result.malware ?? [],
+      extraction: result.extraction,
+      sbom: {
+        components: processedComponents,
+      },
     };
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.name === "AbortError"
-    ) {
-      throw new Error(
-        "Python firmware scanner timed out after 30 minutes",
-      );
-    }
-
+    console.error("[Python Scanner Error]", error);
     throw error;
-  } finally {
-    clearTimeout(timeout);
   }
 }

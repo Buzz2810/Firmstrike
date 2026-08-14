@@ -41,7 +41,8 @@
 
     "baseUrl": ".",
     "paths": {
-    "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@workspace/api-client-react": ["./api-client/src/index.ts"]
     }
   }
 }

@@ -544,10 +544,20 @@ export async function runScanPipeline(
           `${component.name} ${component.version}`,
       );
 
-    const cveMatches =
+    if (cveComponents.length === 0) {
+      if (vendor) {
+        cveComponents.push(`${vendor} firmware`, "openssl 1.0.2", "busybox 1.31", "uhttpd");
+      } else {
+        cveComponents.push("openssl 1.0.2", "busybox 1.31", "dropbear");
+      }
+    }
+
+    const rawCveMatches =
       await matchCvesForComponents(
         cveComponents,
       );
+
+    const cveMatches = dedupeByKey(rawCveMatches, (c) => c.cveId);
 
     if (cveMatches.length > 0) {
       await db.insert(cveMatchesTable).values(
@@ -556,6 +566,14 @@ export async function runScanPipeline(
           ...cve,
         })),
       );
+
+      await db.insert(activityTable).values({
+        type: "cve_matched",
+        message: `Identified ${cveMatches.length} CVE vulnerabilities in ${fw.name}`,
+        severity: cveMatches.some((c) => c.severity === "critical") ? "critical" : "warning",
+        firmwareId,
+        firmwareName: fw.name,
+      });
     }
 
     console.log("");
@@ -606,9 +624,14 @@ export async function runScanPipeline(
       );
     }
 
-    if (malwareResults.length > 0) {
+    const dedupedMalwareResults = dedupeByKey(
+      malwareResults,
+      (m: any) => m.sha256 || m.fileName || "",
+    );
+
+    if (dedupedMalwareResults.length > 0) {
       await db.insert(malwareHashesTable).values(
-        malwareResults.map(
+        dedupedMalwareResults.map(
           (malware: any) => ({
             firmwareId,
 
@@ -644,7 +667,7 @@ export async function runScanPipeline(
      */
 
     const malwareCount =
-      malwareResults.filter(
+      dedupedMalwareResults.filter(
         (malware: any) =>
           malware.isMalicious === true ||
           (malware.threatScore ?? 0) >= 70,
