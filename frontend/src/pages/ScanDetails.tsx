@@ -1,10 +1,7 @@
 import { useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { 
-  useGetFirmware, getGetFirmwareQueryKey,
-  useGetScanResults, getGetScanResultsQueryKey,
-  useGetExtractedFiles, getGetExtractedFilesQueryKey
-} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGetFirmware, getGetFirmwareQueryKey, useGetScanResults, useGetExtractedFiles } from "@workspace/api-client-react";
 import type { ScanResult } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,56 +11,55 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, ChevronLeft, File, Folder, HardDrive, ShieldAlert, Cpu, Hash, Clock, Bug, Fingerprint, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
 
 const POLL_INTERVAL_MS = 3000;
 
 export default function ScanDetails() {
   const params = useParams();
-  const firmwareId = parseInt(params.firmwareId || "0", 10);
+  const rawId = params.scanId || params.firmwareId || "0";
+  const targetId = parseInt(rawId, 10);
 
   const queryClient = useQueryClient();
 
-  const { data: firmware, isLoading: loadingFw } = useGetFirmware(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetFirmwareQueryKey(firmwareId) }
-  });
-
-  const { data: scanResults, isLoading: loadingScan } = useGetScanResults(firmwareId, {
+  const { data: scanResults, isLoading: loadingScan } = useGetScanResults(targetId, {
     query: {
-      enabled: !!firmwareId,
-      queryKey: getGetScanResultsQueryKey(firmwareId),
-      // Poll every 3s while a scan is actively running; stop when done
-      refetchInterval: (query): number | false => {
-        const data = query.state.data as ScanResult[] | undefined;
+      enabled: !!targetId,
+      queryKey: ["scanResults", targetId],
+      refetchInterval: (data: ScanResult[] | undefined) => {
         const latest = Array.isArray(data) ? data[0] : undefined;
         return latest?.status === "running" ? POLL_INTERVAL_MS : false;
       },
-    }
+    },
   });
-
-  const { data: files, isLoading: loadingFiles } = useGetExtractedFiles(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetExtractedFilesQueryKey(firmwareId) }
-  });
-
-  if (!firmwareId) return <div>Invalid ID</div>;
 
   const latestScan = scanResults?.[0];
+  const activeScanId = latestScan?.id || targetId;
+  const derivedFirmwareId = latestScan?.firmwareId || targetId;
+
+  const { data: firmware, isLoading: loadingFw } = useGetFirmware(derivedFirmwareId, {
+    query: { enabled: !!derivedFirmwareId, queryKey: getGetFirmwareQueryKey(derivedFirmwareId) }
+  });
+
+  const { data: files, isLoading: loadingFiles } = useGetExtractedFiles(activeScanId, { query: { enabled: !!activeScanId, queryKey: ["extractedFiles", activeScanId] } });
+
+  if (!targetId) return <div>Invalid Scan ID</div>;
+
   const isRunning = latestScan?.status === "running";
   const isCompleted = latestScan?.status === "completed";
   const isFailed = latestScan?.status === "failed";
 
   useEffect(() => {
-    if (!firmwareId) return;
+    if (!activeScanId) return;
     if (latestScan?.status === "completed" || latestScan?.status === "failed") {
-      queryClient.invalidateQueries({ queryKey: getGetFirmwareQueryKey(firmwareId) });
+      queryClient.invalidateQueries({ queryKey: getGetFirmwareQueryKey(derivedFirmwareId) });
     }
-  }, [firmwareId, latestScan?.status, queryClient]);
+  }, [activeScanId, derivedFirmwareId, latestScan?.status, queryClient]);
 
   const subPages = [
-    { href: `/security/${firmwareId}`, label: "Security Analysis",  icon: ShieldAlert, color: "text-orange-500 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20" },
-    { href: `/cve/${firmwareId}`,      label: "CVE Intelligence",   icon: Bug,         color: "text-red-500 border-red-500/30 bg-red-500/10 hover:bg-red-500/20" },
-    { href: `/malware/${firmwareId}`,  label: "Malware Detection",  icon: Fingerprint, color: "text-purple-500 border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20" },
-    { href: `/reports/${firmwareId}`,  label: "Reports & AI",       icon: FileText,    color: "text-primary border-primary/30 bg-primary/10 hover:bg-primary/20" },
+    { href: `/scans/${activeScanId}/security`, label: "Security Analysis",  icon: ShieldAlert, color: "text-orange-500 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20" },
+    { href: `/scans/${activeScanId}/cve`,      label: "CVE Intelligence",   icon: Bug,         color: "text-red-500 border-red-500/30 bg-red-500/10 hover:bg-red-500/20" },
+    { href: `/scans/${activeScanId}/malware`,  label: "Malware Detection",  icon: Fingerprint, color: "text-purple-500 border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20" },
+    { href: `/scans/${activeScanId}/reports`,  label: "Reports & AI",       icon: FileText,    color: "text-primary border-primary/30 bg-primary/10 hover:bg-primary/20" },
   ];
 
   return (
@@ -80,7 +76,7 @@ export default function ScanDetails() {
           className="text-3xl font-bold font-mono text-primary flex items-center drop-shadow-[0_0_8px_rgba(0,255,255,0.5)]"
         >
           <Search className="mr-3 text-primary" />
-          SCAN_TELEMETRY
+          SCAN_TELEMETRY (SCAN #{activeScanId})
         </motion.h1>
       </div>
 
@@ -91,6 +87,9 @@ export default function ScanDetails() {
               <div>
                 <CardTitle className="font-mono text-lg text-foreground flex items-center">
                   {loadingFw ? <Skeleton className="h-6 w-48" /> : firmware?.name}
+                  <Badge variant="outline" className="ml-3 font-mono text-xs border-primary/40 text-primary">
+                    SCAN #{activeScanId}
+                  </Badge>
                 </CardTitle>
                 <CardDescription className="font-mono text-xs mt-1 text-muted-foreground flex items-center">
                   <Hash className="w-3 h-3 mr-1 inline" />
@@ -99,8 +98,8 @@ export default function ScanDetails() {
               </div>
               <div>
                 {loadingFw ? <Skeleton className="h-6 w-24" /> : (
-                  <Badge variant="outline" className={`font-mono ${firmware?.status === 'completed' ? 'border-primary/50 text-primary' : firmware?.status === 'scanning' ? 'border-blue-500/50 text-blue-400 animate-pulse' : firmware?.status === 'failed' ? 'border-destructive/50 text-destructive' : ''}`}>
-                    {firmware?.status.toUpperCase()}
+                  <Badge variant="outline" className={`font-mono ${latestScan?.status === 'completed' || firmware?.status === 'completed' ? 'border-primary/50 text-primary' : isRunning ? 'border-blue-500/50 text-blue-400 animate-pulse' : isFailed ? 'border-destructive/50 text-destructive' : ''}`}>
+                    {(latestScan?.status || firmware?.status || 'UNKNOWN').toUpperCase()}
                   </Badge>
                 )}
               </div>
@@ -182,7 +181,7 @@ export default function ScanDetails() {
                   <div className="bg-background/50 border border-border/50 p-3 rounded-md text-center">
                     <p className="text-xs font-mono text-muted-foreground mb-1 uppercase">Files Extracted</p>
                     <p className="text-2xl font-mono text-foreground">
-                      {isRunning ? <Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /> : (latestScan.totalFiles ?? 0)}
+                      {isRunning ? <Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /> : (latestScan.totalFiles ?? files?.length ?? 0)}
                     </p>
                   </div>
                   <div className={`bg-background/50 border ${latestScan.vulnerabilitiesFound ? 'border-destructive/30' : 'border-border/50'} p-3 rounded-md text-center`}>
@@ -209,14 +208,13 @@ export default function ScanDetails() {
               </div>
             ) : (
               <div className="text-center p-4 text-muted-foreground font-mono text-sm">
-                No scan data available.
+                No scan data available for Scan #{activeScanId}.
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Analysis sub-page navigation — shown only when scan is completed */}
       {isCompleted && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -226,7 +224,7 @@ export default function ScanDetails() {
             <CardHeader>
               <CardTitle className="font-mono text-sm uppercase text-primary border-b border-border/50 pb-2 flex items-center gap-2">
                 <ExternalLink className="w-4 h-4" />
-                Deep Analysis Modules
+                Deep Analysis Modules (Scan #{activeScanId})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -247,7 +245,7 @@ export default function ScanDetails() {
 
       <Card className="border-border bg-card/80 backdrop-blur-md shadow-lg">
         <CardHeader>
-          <CardTitle className="font-mono text-sm uppercase text-primary border-b border-border/50 pb-2">Extracted File System</CardTitle>
+          <CardTitle className="font-mono text-sm uppercase text-primary border-b border-border/50 pb-2">Extracted File System (Scan #{activeScanId})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {loadingFiles ? (
@@ -294,10 +292,10 @@ export default function ScanDetails() {
           ) : isRunning ? (
             <div className="p-8 text-center text-muted-foreground font-mono flex flex-col items-center gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-              <span>Extraction in progress…</span>
+              <span>Extraction in progress for Scan #{activeScanId}…</span>
             </div>
           ) : (
-            <div className="p-8 text-center text-muted-foreground font-mono">No files extracted yet.</div>
+            <div className="p-8 text-center text-muted-foreground font-mono">No files extracted for Scan #{activeScanId}.</div>
           )}
         </CardContent>
       </Card>

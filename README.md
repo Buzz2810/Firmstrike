@@ -235,6 +235,8 @@ pnpm --filter @workspace/frontend run dev
 
 Then open **http://localhost:25439** in your browser.
 
+Note: scans are tracked by a unique `scanId` (primary key in the `scan_results` table). API endpoints that return per-scan data use `scanId` in paths — e.g. `/api/scanner/results/{scanId}` and `/api/scanner/files/{scanId}`. You can still address the latest scan for a firmware by using the firmware id in the same path (the backend resolves a firmware id to its latest scan id transparently).
+
 ---
 
 ## 📜 Available Scripts

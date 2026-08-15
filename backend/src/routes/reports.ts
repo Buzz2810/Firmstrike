@@ -5,37 +5,39 @@ import { eq, desc } from "drizzle-orm";
 import { generatePdfReport } from "../services/pdf.js";
 import { generateAiReport } from "../services/gemini.js";
 import { generateSbomReport, getSbomReport } from "../services/sbom-generator.js";
+import { resolveScanId } from "../lib/scans.js";
 
 const router: IRouter = Router();
 
-router.get("/reports/pdf/:firmwareId", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.firmwareId) ? req.params.firmwareId[0] : req.params.firmwareId;
-  const firmwareId = parseInt(raw, 10);
-  if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
+router.get("/reports/pdf/:id", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const resolved = await resolveScanId(raw);
+  if (!resolved) { res.status(400).json({ error: "Invalid scan/firmware ID" }); return; }
 
-  const { size } = await generatePdfReport(firmwareId);
-  const [scan] = await db.select().from(scanResultsTable).where(eq(scanResultsTable.firmwareId, firmwareId));
+  const { size } = await generatePdfReport(resolved.scanId);
+  const [scan] = await db.select().from(scanResultsTable).where(eq(scanResultsTable.id, resolved.scanId));
 
   res.json({
-    firmwareId,
+    scanId: resolved.scanId,
+    firmwareId: resolved.firmwareId,
     generatedAt: new Date().toISOString(),
-    downloadUrl: `/api/reports/pdf/${firmwareId}/download`,
+    downloadUrl: `/api/reports/pdf/${resolved.scanId}/download`,
     fileSize: size,
-    scanId: scan?.id ?? null,
+    scanIdNum: scan?.id ?? resolved.scanId,
   });
 });
 
-router.get("/reports/pdf/:firmwareId/download", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.firmwareId) ? req.params.firmwareId[0] : req.params.firmwareId;
-  const firmwareId = parseInt(raw, 10);
-  if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
+router.get("/reports/pdf/:id/download", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const resolved = await resolveScanId(raw);
+  if (!resolved) { res.status(400).json({ error: "Invalid scan/firmware ID" }); return; }
 
-  const { path: reportFilePath } = await generatePdfReport(firmwareId);
-  const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, firmwareId));
+  const { path: reportFilePath } = await generatePdfReport(resolved.scanId);
+  const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, resolved.firmwareId));
 
-  const safeName = (fw?.name ?? `firmware-${firmwareId}`).replace(/[^a-zA-Z0-9._-]/g, "_");
+  const safeName = (fw?.name ?? `scan-${resolved.scanId}`).replace(/[^a-zA-Z0-9._-]/g, "_");
   res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="viv-report-${safeName}.pdf"`);
+  res.setHeader("Content-Disposition", `attachment; filename="firmstrike-report-${safeName}-scan${resolved.scanId}.pdf"`);
 
   const fileStream = createReadStream(reportFilePath);
   fileStream.on("error", () => {
@@ -44,19 +46,19 @@ router.get("/reports/pdf/:firmwareId/download", async (req, res): Promise<void> 
   fileStream.pipe(res);
 });
 
-router.get("/reports/ai-summary/:firmwareId", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.firmwareId) ? req.params.firmwareId[0] : req.params.firmwareId;
-  const firmwareId = parseInt(raw, 10);
-  if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
+router.get("/reports/ai-summary/:id", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const resolved = await resolveScanId(raw);
+  if (!resolved) { res.status(400).json({ error: "Invalid scan/firmware ID" }); return; }
 
-  let [report] = await db.select().from(aiReportsTable).where(eq(aiReportsTable.firmwareId, firmwareId));
+  let [report] = await db.select().from(aiReportsTable).where(eq(aiReportsTable.scanId, resolved.scanId));
 
   if (!report) {
-    const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, firmwareId));
-    const vulns = await db.select().from(vulnerabilitiesTable).where(eq(vulnerabilitiesTable.firmwareId, firmwareId));
+    const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, resolved.firmwareId));
+    const vulns = await db.select().from(vulnerabilitiesTable).where(eq(vulnerabilitiesTable.scanId, resolved.scanId));
 
     const ai = await generateAiReport({
-      firmwareName: fw?.name ?? `Firmware #${firmwareId}`,
+      firmwareName: fw?.name ?? `Firmware #${resolved.firmwareId}`,
       architecture: fw?.architecture ?? "UNKNOWN",
       vulnerabilities: vulns.map((v) => ({
         type: v.type,
@@ -72,7 +74,8 @@ router.get("/reports/ai-summary/:firmwareId", async (req, res): Promise<void> =>
     });
 
     const [inserted] = await db.insert(aiReportsTable).values({
-      firmwareId,
+      scanId: resolved.scanId,
+      firmwareId: resolved.firmwareId,
       summary: ai.summary,
       riskLevel: ai.riskLevel,
       keyFindings: JSON.stringify(ai.keyFindings),
@@ -83,6 +86,7 @@ router.get("/reports/ai-summary/:firmwareId", async (req, res): Promise<void> =>
   }
 
   res.json({
+    scanId: report.scanId ?? resolved.scanId,
     firmwareId: report.firmwareId,
     summary: report.summary,
     riskLevel: report.riskLevel,
@@ -93,18 +97,18 @@ router.get("/reports/ai-summary/:firmwareId", async (req, res): Promise<void> =>
   });
 });
 
-router.get("/reports/sbom/:firmwareId", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.firmwareId) ? req.params.firmwareId[0] : req.params.firmwareId;
-  const firmwareId = parseInt(raw, 10);
-  if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
+router.get("/reports/sbom/:id", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const resolved = await resolveScanId(raw);
+  if (!resolved) { res.status(400).json({ error: "Invalid scan/firmware ID" }); return; }
 
-  const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, firmwareId));
+  const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, resolved.firmwareId));
   if (!fw?.extractPath) { res.status(404).json({ error: "Firmware extraction path not available" }); return; }
 
-  let sbom = await getSbomReport(firmwareId);
+  let sbom = await getSbomReport(resolved.scanId);
   if (!sbom) {
-    await generateSbomReport(firmwareId, fw.extractPath);
-    sbom = await getSbomReport(firmwareId);
+    await generateSbomReport(resolved.scanId, resolved.firmwareId, fw.extractPath);
+    sbom = await getSbomReport(resolved.scanId);
   }
 
   if (!sbom) {
@@ -113,27 +117,28 @@ router.get("/reports/sbom/:firmwareId", async (req, res): Promise<void> => {
   }
 
   res.json({
-    firmwareId,
+    scanId: resolved.scanId,
+    firmwareId: resolved.firmwareId,
     generatedAt: sbom.report.generatedAt.toISOString(),
     componentCount: sbom.report.componentCount,
     downloadUrls: {
-      cyclonedx: `/api/reports/sbom/${firmwareId}/download/cyclonedx`,
-      spdx: `/api/reports/sbom/${firmwareId}/download/spdx`,
-      csv: `/api/reports/sbom/${firmwareId}/download/csv`,
+      cyclonedx: `/api/reports/sbom/${resolved.scanId}/download/cyclonedx`,
+      spdx: `/api/reports/sbom/${resolved.scanId}/download/spdx`,
+      csv: `/api/reports/sbom/${resolved.scanId}/download/csv`,
     },
     components: sbom.components,
   });
 });
 
-router.get("/reports/sbom/:firmwareId/download/:format", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.firmwareId) ? req.params.firmwareId[0] : req.params.firmwareId;
-  const firmwareId = parseInt(raw, 10);
+router.get("/reports/sbom/:id/download/:format", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const format = req.params.format;
-  if (isNaN(firmwareId)) { res.status(400).json({ error: "Invalid firmwareId" }); return; }
+  const resolved = await resolveScanId(raw);
+  if (!resolved) { res.status(400).json({ error: "Invalid scan/firmware ID" }); return; }
   if (!["cyclonedx", "spdx", "csv"].includes(format)) { res.status(400).json({ error: "Unsupported format" }); return; }
   const formatKey = format as "cyclonedx" | "spdx" | "csv";
 
-  const sbom = await getSbomReport(firmwareId);
+  const sbom = await getSbomReport(resolved.scanId);
   if (!sbom) { res.status(404).json({ error: "SBOM report not found" }); return; }
 
   const filePath = formatKey === "cyclonedx" ? sbom.report.cyclonedxPath : formatKey === "spdx" ? sbom.report.spdxPath : sbom.report.csvPath;
@@ -141,33 +146,34 @@ router.get("/reports/sbom/:firmwareId/download/:format", async (req, res): Promi
   const names = { cyclonedx: "cyclonedx", spdx: "spdx", csv: "sbom" } as const;
 
   res.setHeader("Content-Type", types[formatKey]);
-  res.setHeader("Content-Disposition", `attachment; filename="firmware-${firmwareId}-${names[formatKey]}.${formatKey === "csv" ? "csv" : "json"}"`);
+  res.setHeader("Content-Disposition", `attachment; filename="scan-${resolved.scanId}-${names[formatKey]}.${formatKey === "csv" ? "csv" : "json"}"`);
   createReadStream(filePath).pipe(res);
 });
 
 router.get("/reports/history", async (_req, res): Promise<void> => {
   const scans = await db.select().from(scanResultsTable).orderBy(desc(scanResultsTable.startedAt)).limit(20);
-  // Fetch all malware hashes to compute real threat scores
   const allHashes = await db.select().from(malwareHashesTable);
-  const hashScoreByFirmware = new Map<number, number>();
+  const hashScoreByScan = new Map<number, number>();
   const hashGrouped = new Map<number, typeof allHashes>();
   for (const h of allHashes) {
-    const existing = hashGrouped.get(h.firmwareId) ?? [];
-    existing.push(h);
-    hashGrouped.set(h.firmwareId, existing);
+    if (h.scanId) {
+      const existing = hashGrouped.get(h.scanId) ?? [];
+      existing.push(h);
+      hashGrouped.set(h.scanId, existing);
+    }
   }
-  for (const [fwId, hashes] of hashGrouped.entries()) {
+  for (const [sId, hashes] of hashGrouped.entries()) {
     const avg = hashes.reduce((s, h) => s + h.threatScore, 0) / hashes.length;
-    hashScoreByFirmware.set(fwId, Math.round(avg));
+    hashScoreByScan.set(sId, Math.round(avg));
   }
 
   const history = await Promise.all(scans.map(async (s) => {
     const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, s.firmwareId));
-    // Prefer real malware-derived threat score; fall back to risk-level estimate
-    const threatScore = hashScoreByFirmware.get(s.firmwareId) ??
+    const threatScore = hashScoreByScan.get(s.id) ??
       (s.riskLevel === "critical" ? 75 : s.riskLevel === "high" ? 50 : s.riskLevel === "medium" ? 25 : 5);
     return {
       id: s.id,
+      scanId: s.id,
       firmwareId: s.firmwareId,
       firmwareName: fw?.name || `Firmware #${s.firmwareId}`,
       scannedAt: s.startedAt.toISOString(),

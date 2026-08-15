@@ -729,20 +729,20 @@ export const useStartScan = <TError = ErrorType<unknown>,
       return useMutation(getStartScanMutationOptions(options));
     }
 
-export const getGetScanResultsUrl = (firmwareId: number,) => {
+export const getGetScanResultsUrl = (scanId: number,) => {
 
 
 
 
-  return `/api/scanner/results/${firmwareId}`
+  return `/api/scanner/results/${scanId}`
 }
 
 /**
- * @summary Get scan results for firmware
+ * @summary Get scan results for a scan execution (by scanId)
  */
-export const getScanResults = async (firmwareId: number, options?: RequestInit): Promise<ScanResult[]> => {
+export const getScanResults = async (scanId: number, options?: RequestInit): Promise<ScanResult[]> => {
 
-  return customFetch<ScanResult[]>(getGetScanResultsUrl(firmwareId),
+  return customFetch<ScanResult[]>(getGetScanResultsUrl(scanId),
   {
     ...options,
     method: 'GET'
@@ -755,29 +755,29 @@ export const getScanResults = async (firmwareId: number, options?: RequestInit):
 
 
 
-export const getGetScanResultsQueryKey = (firmwareId: number,) => {
+export const getGetScanResultsQueryKey = (scanId: number,) => {
     return [
-    `/api/scanner/results/${firmwareId}`
+    `/api/scanner/results/${scanId}`
     ] as const;
     }
 
 
-export const getGetScanResultsQueryOptions = <TData = Awaited<ReturnType<typeof getScanResults>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetScanResultsQueryOptions = <TData = Awaited<ReturnType<typeof getScanResults>>, TError = ErrorType<unknown>>(scanId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetScanResultsQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetScanResultsQueryKey(scanId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScanResults>>> = ({ signal }) => getScanResults(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScanResults>>> = ({ signal }) => getScanResults(scanId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScanResults>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(scanId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScanResults>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetScanResultsQueryResult = NonNullable<Awaited<ReturnType<typeof getScanResults>>>
@@ -785,15 +785,15 @@ export type GetScanResultsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get scan results for firmware
+ * @summary Get scan results for a scan execution (by scanId)
  */
 
 export function useGetScanResults<TData = Awaited<ReturnType<typeof getScanResults>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ scanId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetScanResultsQueryOptions(firmwareId,options)
+  const queryOptions = getGetScanResultsQueryOptions(scanId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -806,20 +806,20 @@ export function useGetScanResults<TData = Awaited<ReturnType<typeof getScanResul
 
 
 
-export const getGetExtractedFilesUrl = (firmwareId: number,) => {
+export const getGetExtractedFilesUrl = (scanId: number,) => {
 
 
 
 
-  return `/api/scanner/files/${firmwareId}`
+  return `/api/scanner/files/${scanId}`
 }
 
 /**
- * @summary Get extracted files from firmware
+ * @summary Get extracted files for a scan execution (by scanId)
  */
-export const getExtractedFiles = async (firmwareId: number, options?: RequestInit): Promise<ExtractedFile[]> => {
+export const getExtractedFiles = async (scanId: number, options?: RequestInit): Promise<ExtractedFile[]> => {
 
-  return customFetch<ExtractedFile[]>(getGetExtractedFilesUrl(firmwareId),
+  return customFetch<ExtractedFile[]>(getGetExtractedFilesUrl(scanId),
   {
     ...options,
     method: 'GET'
@@ -832,29 +832,29 @@ export const getExtractedFiles = async (firmwareId: number, options?: RequestIni
 
 
 
-export const getGetExtractedFilesQueryKey = (firmwareId: number,) => {
+export const getGetExtractedFilesQueryKey = (scanId: number,) => {
     return [
-    `/api/scanner/files/${firmwareId}`
+    `/api/scanner/files/${scanId}`
     ] as const;
     }
 
 
-export const getGetExtractedFilesQueryOptions = <TData = Awaited<ReturnType<typeof getExtractedFiles>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExtractedFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetExtractedFilesQueryOptions = <TData = Awaited<ReturnType<typeof getExtractedFiles>>, TError = ErrorType<unknown>>(scanId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExtractedFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetExtractedFilesQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetExtractedFilesQueryKey(scanId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExtractedFiles>>> = ({ signal }) => getExtractedFiles(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExtractedFiles>>> = ({ signal }) => getExtractedFiles(scanId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExtractedFiles>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(scanId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExtractedFiles>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetExtractedFilesQueryResult = NonNullable<Awaited<ReturnType<typeof getExtractedFiles>>>
@@ -862,15 +862,15 @@ export type GetExtractedFilesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get extracted files from firmware
+ * @summary Get extracted files for a scan execution (by scanId)
  */
 
 export function useGetExtractedFiles<TData = Awaited<ReturnType<typeof getExtractedFiles>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExtractedFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ scanId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExtractedFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetExtractedFilesQueryOptions(firmwareId,options)
+  const queryOptions = getGetExtractedFilesQueryOptions(scanId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -883,21 +883,21 @@ export function useGetExtractedFiles<TData = Awaited<ReturnType<typeof getExtrac
 
 
 
-export const getRunBinaryAnalysisUrl = (firmwareId: number,) => {
+export const getRunBinaryAnalysisUrl = (id: number,) => {
 
 
 
 
-  return `/api/scanner/binary/${firmwareId}`
+  return `/api/scanner/binary/${id}`
 }
 
 /**
  * @summary Run binary analysis on extracted binaries
  */
-export const runBinaryAnalysis = async (firmwareId: number,
+export const runBinaryAnalysis = async (id: number,
     binaryAnalysisInput: BinaryAnalysisInput, options?: RequestInit): Promise<BinaryAnalysisResult> => {
 
-  return customFetch<BinaryAnalysisResult>(getRunBinaryAnalysisUrl(firmwareId),
+  return customFetch<BinaryAnalysisResult>(getRunBinaryAnalysisUrl(id),
   {
     ...options,
     method: 'POST',
@@ -911,8 +911,8 @@ export const runBinaryAnalysis = async (firmwareId: number,
 
 
 export const getRunBinaryAnalysisMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBinaryAnalysis>>, TError,{firmwareId: number;data: BodyType<BinaryAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof runBinaryAnalysis>>, TError,{firmwareId: number;data: BodyType<BinaryAnalysisInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBinaryAnalysis>>, TError,{id: number;data: BodyType<BinaryAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runBinaryAnalysis>>, TError,{id: number;data: BodyType<BinaryAnalysisInput>}, TContext> => {
 
 const mutationKey = ['runBinaryAnalysis'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -924,10 +924,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runBinaryAnalysis>>, {firmwareId: number;data: BodyType<BinaryAnalysisInput>}> = (props) => {
-          const {firmwareId,data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runBinaryAnalysis>>, {id: number;data: BodyType<BinaryAnalysisInput>}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  runBinaryAnalysis(firmwareId,data,requestOptions)
+          return  runBinaryAnalysis(id,data,requestOptions)
         }
 
 
@@ -945,30 +945,30 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Run binary analysis on extracted binaries
  */
 export const useRunBinaryAnalysis = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBinaryAnalysis>>, TError,{firmwareId: number;data: BodyType<BinaryAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBinaryAnalysis>>, TError,{id: number;data: BodyType<BinaryAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof runBinaryAnalysis>>,
         TError,
-        {firmwareId: number;data: BodyType<BinaryAnalysisInput>},
+        {id: number;data: BodyType<BinaryAnalysisInput>},
         TContext
       > => {
       return useMutation(getRunBinaryAnalysisMutationOptions(options));
     }
 
-export const getGetVulnerabilitiesUrl = (firmwareId: number,) => {
+export const getGetVulnerabilitiesUrl = (id: number,) => {
 
 
 
 
-  return `/api/security/vulnerabilities/${firmwareId}`
+  return `/api/security/vulnerabilities/${id}`
 }
 
 /**
  * @summary Get vulnerabilities for firmware
  */
-export const getVulnerabilities = async (firmwareId: number, options?: RequestInit): Promise<Vulnerability[]> => {
+export const getVulnerabilities = async (id: number, options?: RequestInit): Promise<Vulnerability[]> => {
 
-  return customFetch<Vulnerability[]>(getGetVulnerabilitiesUrl(firmwareId),
+  return customFetch<Vulnerability[]>(getGetVulnerabilitiesUrl(id),
   {
     ...options,
     method: 'GET'
@@ -981,29 +981,29 @@ export const getVulnerabilities = async (firmwareId: number, options?: RequestIn
 
 
 
-export const getGetVulnerabilitiesQueryKey = (firmwareId: number,) => {
+export const getGetVulnerabilitiesQueryKey = (id: number,) => {
     return [
-    `/api/security/vulnerabilities/${firmwareId}`
+    `/api/security/vulnerabilities/${id}`
     ] as const;
     }
 
 
-export const getGetVulnerabilitiesQueryOptions = <TData = Awaited<ReturnType<typeof getVulnerabilities>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVulnerabilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetVulnerabilitiesQueryOptions = <TData = Awaited<ReturnType<typeof getVulnerabilities>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVulnerabilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetVulnerabilitiesQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetVulnerabilitiesQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVulnerabilities>>> = ({ signal }) => getVulnerabilities(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVulnerabilities>>> = ({ signal }) => getVulnerabilities(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVulnerabilities>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVulnerabilities>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetVulnerabilitiesQueryResult = NonNullable<Awaited<ReturnType<typeof getVulnerabilities>>>
@@ -1015,11 +1015,11 @@ export type GetVulnerabilitiesQueryError = ErrorType<unknown>
  */
 
 export function useGetVulnerabilities<TData = Awaited<ReturnType<typeof getVulnerabilities>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVulnerabilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVulnerabilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetVulnerabilitiesQueryOptions(firmwareId,options)
+  const queryOptions = getGetVulnerabilitiesQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1032,20 +1032,20 @@ export function useGetVulnerabilities<TData = Awaited<ReturnType<typeof getVulne
 
 
 
-export const getGetSecurityScoreUrl = (firmwareId: number,) => {
+export const getGetSecurityScoreUrl = (id: number,) => {
 
 
 
 
-  return `/api/security/score/${firmwareId}`
+  return `/api/security/score/${id}`
 }
 
 /**
  * @summary Get security score for firmware
  */
-export const getSecurityScore = async (firmwareId: number, options?: RequestInit): Promise<SecurityScore> => {
+export const getSecurityScore = async (id: number, options?: RequestInit): Promise<SecurityScore> => {
 
-  return customFetch<SecurityScore>(getGetSecurityScoreUrl(firmwareId),
+  return customFetch<SecurityScore>(getGetSecurityScoreUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1058,29 +1058,29 @@ export const getSecurityScore = async (firmwareId: number, options?: RequestInit
 
 
 
-export const getGetSecurityScoreQueryKey = (firmwareId: number,) => {
+export const getGetSecurityScoreQueryKey = (id: number,) => {
     return [
-    `/api/security/score/${firmwareId}`
+    `/api/security/score/${id}`
     ] as const;
     }
 
 
-export const getGetSecurityScoreQueryOptions = <TData = Awaited<ReturnType<typeof getSecurityScore>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecurityScore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetSecurityScoreQueryOptions = <TData = Awaited<ReturnType<typeof getSecurityScore>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecurityScore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetSecurityScoreQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetSecurityScoreQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSecurityScore>>> = ({ signal }) => getSecurityScore(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSecurityScore>>> = ({ signal }) => getSecurityScore(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSecurityScore>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSecurityScore>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSecurityScoreQueryResult = NonNullable<Awaited<ReturnType<typeof getSecurityScore>>>
@@ -1092,11 +1092,11 @@ export type GetSecurityScoreQueryError = ErrorType<unknown>
  */
 
 export function useGetSecurityScore<TData = Awaited<ReturnType<typeof getSecurityScore>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecurityScore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecurityScore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetSecurityScoreQueryOptions(firmwareId,options)
+  const queryOptions = getGetSecurityScoreQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1109,20 +1109,20 @@ export function useGetSecurityScore<TData = Awaited<ReturnType<typeof getSecurit
 
 
 
-export const getGetHardcodedSecretsUrl = (firmwareId: number,) => {
+export const getGetHardcodedSecretsUrl = (id: number,) => {
 
 
 
 
-  return `/api/security/secrets/${firmwareId}`
+  return `/api/security/secrets/${id}`
 }
 
 /**
  * @summary Get hardcoded secrets found in firmware
  */
-export const getHardcodedSecrets = async (firmwareId: number, options?: RequestInit): Promise<HardcodedSecret[]> => {
+export const getHardcodedSecrets = async (id: number, options?: RequestInit): Promise<HardcodedSecret[]> => {
 
-  return customFetch<HardcodedSecret[]>(getGetHardcodedSecretsUrl(firmwareId),
+  return customFetch<HardcodedSecret[]>(getGetHardcodedSecretsUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1135,29 +1135,29 @@ export const getHardcodedSecrets = async (firmwareId: number, options?: RequestI
 
 
 
-export const getGetHardcodedSecretsQueryKey = (firmwareId: number,) => {
+export const getGetHardcodedSecretsQueryKey = (id: number,) => {
     return [
-    `/api/security/secrets/${firmwareId}`
+    `/api/security/secrets/${id}`
     ] as const;
     }
 
 
-export const getGetHardcodedSecretsQueryOptions = <TData = Awaited<ReturnType<typeof getHardcodedSecrets>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHardcodedSecrets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetHardcodedSecretsQueryOptions = <TData = Awaited<ReturnType<typeof getHardcodedSecrets>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHardcodedSecrets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetHardcodedSecretsQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetHardcodedSecretsQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHardcodedSecrets>>> = ({ signal }) => getHardcodedSecrets(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHardcodedSecrets>>> = ({ signal }) => getHardcodedSecrets(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHardcodedSecrets>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHardcodedSecrets>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetHardcodedSecretsQueryResult = NonNullable<Awaited<ReturnType<typeof getHardcodedSecrets>>>
@@ -1169,11 +1169,11 @@ export type GetHardcodedSecretsQueryError = ErrorType<unknown>
  */
 
 export function useGetHardcodedSecrets<TData = Awaited<ReturnType<typeof getHardcodedSecrets>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHardcodedSecrets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHardcodedSecrets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetHardcodedSecretsQueryOptions(firmwareId,options)
+  const queryOptions = getGetHardcodedSecretsQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1186,20 +1186,20 @@ export function useGetHardcodedSecrets<TData = Awaited<ReturnType<typeof getHard
 
 
 
-export const getGetDangerousFunctionsUrl = (firmwareId: number,) => {
+export const getGetDangerousFunctionsUrl = (id: number,) => {
 
 
 
 
-  return `/api/security/dangerous-functions/${firmwareId}`
+  return `/api/security/dangerous-functions/${id}`
 }
 
 /**
  * @summary Get dangerous function calls found in firmware
  */
-export const getDangerousFunctions = async (firmwareId: number, options?: RequestInit): Promise<DangerousFunction[]> => {
+export const getDangerousFunctions = async (id: number, options?: RequestInit): Promise<DangerousFunction[]> => {
 
-  return customFetch<DangerousFunction[]>(getGetDangerousFunctionsUrl(firmwareId),
+  return customFetch<DangerousFunction[]>(getGetDangerousFunctionsUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1212,29 +1212,29 @@ export const getDangerousFunctions = async (firmwareId: number, options?: Reques
 
 
 
-export const getGetDangerousFunctionsQueryKey = (firmwareId: number,) => {
+export const getGetDangerousFunctionsQueryKey = (id: number,) => {
     return [
-    `/api/security/dangerous-functions/${firmwareId}`
+    `/api/security/dangerous-functions/${id}`
     ] as const;
     }
 
 
-export const getGetDangerousFunctionsQueryOptions = <TData = Awaited<ReturnType<typeof getDangerousFunctions>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDangerousFunctions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetDangerousFunctionsQueryOptions = <TData = Awaited<ReturnType<typeof getDangerousFunctions>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDangerousFunctions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDangerousFunctionsQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetDangerousFunctionsQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDangerousFunctions>>> = ({ signal }) => getDangerousFunctions(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDangerousFunctions>>> = ({ signal }) => getDangerousFunctions(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDangerousFunctions>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDangerousFunctions>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetDangerousFunctionsQueryResult = NonNullable<Awaited<ReturnType<typeof getDangerousFunctions>>>
@@ -1246,11 +1246,11 @@ export type GetDangerousFunctionsQueryError = ErrorType<unknown>
  */
 
 export function useGetDangerousFunctions<TData = Awaited<ReturnType<typeof getDangerousFunctions>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDangerousFunctions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDangerousFunctions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetDangerousFunctionsQueryOptions(firmwareId,options)
+  const queryOptions = getGetDangerousFunctionsQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1263,20 +1263,20 @@ export function useGetDangerousFunctions<TData = Awaited<ReturnType<typeof getDa
 
 
 
-export const getGetCveMatchesUrl = (firmwareId: number,) => {
+export const getGetCveMatchesUrl = (id: number,) => {
 
 
 
 
-  return `/api/cve/matches/${firmwareId}`
+  return `/api/cve/matches/${id}`
 }
 
 /**
  * @summary Get CVE matches for firmware
  */
-export const getCveMatches = async (firmwareId: number, options?: RequestInit): Promise<CveMatch[]> => {
+export const getCveMatches = async (id: number, options?: RequestInit): Promise<CveMatch[]> => {
 
-  return customFetch<CveMatch[]>(getGetCveMatchesUrl(firmwareId),
+  return customFetch<CveMatch[]>(getGetCveMatchesUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1289,29 +1289,29 @@ export const getCveMatches = async (firmwareId: number, options?: RequestInit): 
 
 
 
-export const getGetCveMatchesQueryKey = (firmwareId: number,) => {
+export const getGetCveMatchesQueryKey = (id: number,) => {
     return [
-    `/api/cve/matches/${firmwareId}`
+    `/api/cve/matches/${id}`
     ] as const;
     }
 
 
-export const getGetCveMatchesQueryOptions = <TData = Awaited<ReturnType<typeof getCveMatches>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCveMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetCveMatchesQueryOptions = <TData = Awaited<ReturnType<typeof getCveMatches>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCveMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCveMatchesQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetCveMatchesQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCveMatches>>> = ({ signal }) => getCveMatches(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCveMatches>>> = ({ signal }) => getCveMatches(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCveMatches>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCveMatches>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetCveMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof getCveMatches>>>
@@ -1323,11 +1323,11 @@ export type GetCveMatchesQueryError = ErrorType<unknown>
  */
 
 export function useGetCveMatches<TData = Awaited<ReturnType<typeof getCveMatches>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCveMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCveMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetCveMatchesQueryOptions(firmwareId,options)
+  const queryOptions = getGetCveMatchesQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1340,20 +1340,20 @@ export function useGetCveMatches<TData = Awaited<ReturnType<typeof getCveMatches
 
 
 
-export const getGetCvssScoresUrl = (firmwareId: number,) => {
+export const getGetCvssScoresUrl = (id: number,) => {
 
 
 
 
-  return `/api/cve/scores/${firmwareId}`
+  return `/api/cve/scores/${id}`
 }
 
 /**
  * @summary Get CVSS scores breakdown for firmware
  */
-export const getCvssScores = async (firmwareId: number, options?: RequestInit): Promise<CvssBreakdown> => {
+export const getCvssScores = async (id: number, options?: RequestInit): Promise<CvssBreakdown> => {
 
-  return customFetch<CvssBreakdown>(getGetCvssScoresUrl(firmwareId),
+  return customFetch<CvssBreakdown>(getGetCvssScoresUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1366,29 +1366,29 @@ export const getCvssScores = async (firmwareId: number, options?: RequestInit): 
 
 
 
-export const getGetCvssScoresQueryKey = (firmwareId: number,) => {
+export const getGetCvssScoresQueryKey = (id: number,) => {
     return [
-    `/api/cve/scores/${firmwareId}`
+    `/api/cve/scores/${id}`
     ] as const;
     }
 
 
-export const getGetCvssScoresQueryOptions = <TData = Awaited<ReturnType<typeof getCvssScores>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCvssScores>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetCvssScoresQueryOptions = <TData = Awaited<ReturnType<typeof getCvssScores>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCvssScores>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCvssScoresQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetCvssScoresQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCvssScores>>> = ({ signal }) => getCvssScores(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCvssScores>>> = ({ signal }) => getCvssScores(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCvssScores>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCvssScores>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetCvssScoresQueryResult = NonNullable<Awaited<ReturnType<typeof getCvssScores>>>
@@ -1400,11 +1400,11 @@ export type GetCvssScoresQueryError = ErrorType<unknown>
  */
 
 export function useGetCvssScores<TData = Awaited<ReturnType<typeof getCvssScores>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCvssScores>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCvssScores>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetCvssScoresQueryOptions(firmwareId,options)
+  const queryOptions = getGetCvssScoresQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1488,20 +1488,20 @@ export const useAnalyzeHash = <TError = ErrorType<unknown>,
       return useMutation(getAnalyzeHashMutationOptions(options));
     }
 
-export const getGetThreatScoreUrl = (firmwareId: number,) => {
+export const getGetThreatScoreUrl = (id: number,) => {
 
 
 
 
-  return `/api/malware/threat-score/${firmwareId}`
+  return `/api/malware/threat-score/${id}`
 }
 
 /**
  * @summary Get threat score for firmware
  */
-export const getThreatScore = async (firmwareId: number, options?: RequestInit): Promise<ThreatScore> => {
+export const getThreatScore = async (id: number, options?: RequestInit): Promise<ThreatScore> => {
 
-  return customFetch<ThreatScore>(getGetThreatScoreUrl(firmwareId),
+  return customFetch<ThreatScore>(getGetThreatScoreUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1514,29 +1514,29 @@ export const getThreatScore = async (firmwareId: number, options?: RequestInit):
 
 
 
-export const getGetThreatScoreQueryKey = (firmwareId: number,) => {
+export const getGetThreatScoreQueryKey = (id: number,) => {
     return [
-    `/api/malware/threat-score/${firmwareId}`
+    `/api/malware/threat-score/${id}`
     ] as const;
     }
 
 
-export const getGetThreatScoreQueryOptions = <TData = Awaited<ReturnType<typeof getThreatScore>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getThreatScore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetThreatScoreQueryOptions = <TData = Awaited<ReturnType<typeof getThreatScore>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getThreatScore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetThreatScoreQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetThreatScoreQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getThreatScore>>> = ({ signal }) => getThreatScore(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getThreatScore>>> = ({ signal }) => getThreatScore(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getThreatScore>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getThreatScore>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetThreatScoreQueryResult = NonNullable<Awaited<ReturnType<typeof getThreatScore>>>
@@ -1548,11 +1548,11 @@ export type GetThreatScoreQueryError = ErrorType<unknown>
  */
 
 export function useGetThreatScore<TData = Awaited<ReturnType<typeof getThreatScore>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getThreatScore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getThreatScore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetThreatScoreQueryOptions(firmwareId,options)
+  const queryOptions = getGetThreatScoreQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1565,20 +1565,20 @@ export function useGetThreatScore<TData = Awaited<ReturnType<typeof getThreatSco
 
 
 
-export const getGetVirusTotalResultsUrl = (firmwareId: number,) => {
+export const getGetVirusTotalResultsUrl = (id: number,) => {
 
 
 
 
-  return `/api/malware/virustotal/${firmwareId}`
+  return `/api/malware/virustotal/${id}`
 }
 
 /**
  * @summary Get VirusTotal scan results for firmware files
  */
-export const getVirusTotalResults = async (firmwareId: number, options?: RequestInit): Promise<MalwareHash[]> => {
+export const getVirusTotalResults = async (id: number, options?: RequestInit): Promise<MalwareHash[]> => {
 
-  return customFetch<MalwareHash[]>(getGetVirusTotalResultsUrl(firmwareId),
+  return customFetch<MalwareHash[]>(getGetVirusTotalResultsUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1591,29 +1591,29 @@ export const getVirusTotalResults = async (firmwareId: number, options?: Request
 
 
 
-export const getGetVirusTotalResultsQueryKey = (firmwareId: number,) => {
+export const getGetVirusTotalResultsQueryKey = (id: number,) => {
     return [
-    `/api/malware/virustotal/${firmwareId}`
+    `/api/malware/virustotal/${id}`
     ] as const;
     }
 
 
-export const getGetVirusTotalResultsQueryOptions = <TData = Awaited<ReturnType<typeof getVirusTotalResults>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVirusTotalResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetVirusTotalResultsQueryOptions = <TData = Awaited<ReturnType<typeof getVirusTotalResults>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVirusTotalResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetVirusTotalResultsQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetVirusTotalResultsQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVirusTotalResults>>> = ({ signal }) => getVirusTotalResults(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVirusTotalResults>>> = ({ signal }) => getVirusTotalResults(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVirusTotalResults>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVirusTotalResults>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetVirusTotalResultsQueryResult = NonNullable<Awaited<ReturnType<typeof getVirusTotalResults>>>
@@ -1625,11 +1625,11 @@ export type GetVirusTotalResultsQueryError = ErrorType<unknown>
  */
 
 export function useGetVirusTotalResults<TData = Awaited<ReturnType<typeof getVirusTotalResults>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVirusTotalResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVirusTotalResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetVirusTotalResultsQueryOptions(firmwareId,options)
+  const queryOptions = getGetVirusTotalResultsQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1713,20 +1713,20 @@ export const useStartEmulation = <TError = ErrorType<unknown>,
       return useMutation(getStartEmulationMutationOptions(options));
     }
 
-export const getGetRunningServicesUrl = (firmwareId: number,) => {
+export const getGetRunningServicesUrl = (id: number,) => {
 
 
 
 
-  return `/api/qemu/services/${firmwareId}`
+  return `/api/qemu/services/${id}`
 }
 
 /**
  * @summary Get running services from emulation
  */
-export const getRunningServices = async (firmwareId: number, options?: RequestInit): Promise<EmulationLog[]> => {
+export const getRunningServices = async (id: number, options?: RequestInit): Promise<EmulationLog[]> => {
 
-  return customFetch<EmulationLog[]>(getGetRunningServicesUrl(firmwareId),
+  return customFetch<EmulationLog[]>(getGetRunningServicesUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1739,29 +1739,29 @@ export const getRunningServices = async (firmwareId: number, options?: RequestIn
 
 
 
-export const getGetRunningServicesQueryKey = (firmwareId: number,) => {
+export const getGetRunningServicesQueryKey = (id: number,) => {
     return [
-    `/api/qemu/services/${firmwareId}`
+    `/api/qemu/services/${id}`
     ] as const;
     }
 
 
-export const getGetRunningServicesQueryOptions = <TData = Awaited<ReturnType<typeof getRunningServices>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRunningServices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetRunningServicesQueryOptions = <TData = Awaited<ReturnType<typeof getRunningServices>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRunningServices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetRunningServicesQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetRunningServicesQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRunningServices>>> = ({ signal }) => getRunningServices(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRunningServices>>> = ({ signal }) => getRunningServices(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRunningServices>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRunningServices>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetRunningServicesQueryResult = NonNullable<Awaited<ReturnType<typeof getRunningServices>>>
@@ -1773,11 +1773,11 @@ export type GetRunningServicesQueryError = ErrorType<unknown>
  */
 
 export function useGetRunningServices<TData = Awaited<ReturnType<typeof getRunningServices>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRunningServices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRunningServices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetRunningServicesQueryOptions(firmwareId,options)
+  const queryOptions = getGetRunningServicesQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1790,20 +1790,20 @@ export function useGetRunningServices<TData = Awaited<ReturnType<typeof getRunni
 
 
 
-export const getGetOpenPortsUrl = (firmwareId: number,) => {
+export const getGetOpenPortsUrl = (id: number,) => {
 
 
 
 
-  return `/api/qemu/ports/${firmwareId}`
+  return `/api/qemu/ports/${id}`
 }
 
 /**
  * @summary Get open ports detected during emulation
  */
-export const getOpenPorts = async (firmwareId: number, options?: RequestInit): Promise<OpenPortList> => {
+export const getOpenPorts = async (id: number, options?: RequestInit): Promise<OpenPortList> => {
 
-  return customFetch<OpenPortList>(getGetOpenPortsUrl(firmwareId),
+  return customFetch<OpenPortList>(getGetOpenPortsUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1816,29 +1816,29 @@ export const getOpenPorts = async (firmwareId: number, options?: RequestInit): P
 
 
 
-export const getGetOpenPortsQueryKey = (firmwareId: number,) => {
+export const getGetOpenPortsQueryKey = (id: number,) => {
     return [
-    `/api/qemu/ports/${firmwareId}`
+    `/api/qemu/ports/${id}`
     ] as const;
     }
 
 
-export const getGetOpenPortsQueryOptions = <TData = Awaited<ReturnType<typeof getOpenPorts>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenPorts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetOpenPortsQueryOptions = <TData = Awaited<ReturnType<typeof getOpenPorts>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenPorts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOpenPortsQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetOpenPortsQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOpenPorts>>> = ({ signal }) => getOpenPorts(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOpenPorts>>> = ({ signal }) => getOpenPorts(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOpenPorts>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOpenPorts>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetOpenPortsQueryResult = NonNullable<Awaited<ReturnType<typeof getOpenPorts>>>
@@ -1850,11 +1850,11 @@ export type GetOpenPortsQueryError = ErrorType<unknown>
  */
 
 export function useGetOpenPorts<TData = Awaited<ReturnType<typeof getOpenPorts>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenPorts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenPorts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetOpenPortsQueryOptions(firmwareId,options)
+  const queryOptions = getGetOpenPortsQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1867,20 +1867,20 @@ export function useGetOpenPorts<TData = Awaited<ReturnType<typeof getOpenPorts>>
 
 
 
-export const getGetPdfReportUrl = (firmwareId: number,) => {
+export const getGetPdfReportUrl = (id: number,) => {
 
 
 
 
-  return `/api/reports/pdf/${firmwareId}`
+  return `/api/reports/pdf/${id}`
 }
 
 /**
  * @summary Get PDF report for a firmware scan
  */
-export const getPdfReport = async (firmwareId: number, options?: RequestInit): Promise<ReportMeta> => {
+export const getPdfReport = async (id: number, options?: RequestInit): Promise<ReportMeta> => {
 
-  return customFetch<ReportMeta>(getGetPdfReportUrl(firmwareId),
+  return customFetch<ReportMeta>(getGetPdfReportUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1893,29 +1893,29 @@ export const getPdfReport = async (firmwareId: number, options?: RequestInit): P
 
 
 
-export const getGetPdfReportQueryKey = (firmwareId: number,) => {
+export const getGetPdfReportQueryKey = (id: number,) => {
     return [
-    `/api/reports/pdf/${firmwareId}`
+    `/api/reports/pdf/${id}`
     ] as const;
     }
 
 
-export const getGetPdfReportQueryOptions = <TData = Awaited<ReturnType<typeof getPdfReport>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPdfReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetPdfReportQueryOptions = <TData = Awaited<ReturnType<typeof getPdfReport>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPdfReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPdfReportQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetPdfReportQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPdfReport>>> = ({ signal }) => getPdfReport(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPdfReport>>> = ({ signal }) => getPdfReport(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPdfReport>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPdfReport>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetPdfReportQueryResult = NonNullable<Awaited<ReturnType<typeof getPdfReport>>>
@@ -1927,11 +1927,11 @@ export type GetPdfReportQueryError = ErrorType<unknown>
  */
 
 export function useGetPdfReport<TData = Awaited<ReturnType<typeof getPdfReport>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPdfReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPdfReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetPdfReportQueryOptions(firmwareId,options)
+  const queryOptions = getGetPdfReportQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1944,20 +1944,20 @@ export function useGetPdfReport<TData = Awaited<ReturnType<typeof getPdfReport>>
 
 
 
-export const getGetAiSummaryUrl = (firmwareId: number,) => {
+export const getGetAiSummaryUrl = (id: number,) => {
 
 
 
 
-  return `/api/reports/ai-summary/${firmwareId}`
+  return `/api/reports/ai-summary/${id}`
 }
 
 /**
  * @summary Get AI-generated summary and risk analysis
  */
-export const getAiSummary = async (firmwareId: number, options?: RequestInit): Promise<AiReport> => {
+export const getAiSummary = async (id: number, options?: RequestInit): Promise<AiReport> => {
 
-  return customFetch<AiReport>(getGetAiSummaryUrl(firmwareId),
+  return customFetch<AiReport>(getGetAiSummaryUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1970,29 +1970,29 @@ export const getAiSummary = async (firmwareId: number, options?: RequestInit): P
 
 
 
-export const getGetAiSummaryQueryKey = (firmwareId: number,) => {
+export const getGetAiSummaryQueryKey = (id: number,) => {
     return [
-    `/api/reports/ai-summary/${firmwareId}`
+    `/api/reports/ai-summary/${id}`
     ] as const;
     }
 
 
-export const getGetAiSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getAiSummary>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAiSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetAiSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getAiSummary>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAiSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAiSummaryQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetAiSummaryQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAiSummary>>> = ({ signal }) => getAiSummary(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAiSummary>>> = ({ signal }) => getAiSummary(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAiSummary>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAiSummary>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAiSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAiSummary>>>
@@ -2004,11 +2004,11 @@ export type GetAiSummaryQueryError = ErrorType<unknown>
  */
 
 export function useGetAiSummary<TData = Awaited<ReturnType<typeof getAiSummary>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAiSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAiSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAiSummaryQueryOptions(firmwareId,options)
+  const queryOptions = getGetAiSummaryQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2021,20 +2021,20 @@ export function useGetAiSummary<TData = Awaited<ReturnType<typeof getAiSummary>>
 
 
 
-export const getGetSbomReportUrl = (firmwareId: number,) => {
+export const getGetSbomReportUrl = (id: number,) => {
 
 
 
 
-  return `/api/reports/sbom/${firmwareId}`
+  return `/api/reports/sbom/${id}`
 }
 
 /**
  * @summary Get SBOM metadata and component list for a firmware scan
  */
-export const getSbomReport = async (firmwareId: number, options?: RequestInit): Promise<SbomReport> => {
+export const getSbomReport = async (id: number, options?: RequestInit): Promise<SbomReport> => {
 
-  return customFetch<SbomReport>(getGetSbomReportUrl(firmwareId),
+  return customFetch<SbomReport>(getGetSbomReportUrl(id),
   {
     ...options,
     method: 'GET'
@@ -2047,29 +2047,29 @@ export const getSbomReport = async (firmwareId: number, options?: RequestInit): 
 
 
 
-export const getGetSbomReportQueryKey = (firmwareId: number,) => {
+export const getGetSbomReportQueryKey = (id: number,) => {
     return [
-    `/api/reports/sbom/${firmwareId}`
+    `/api/reports/sbom/${id}`
     ] as const;
     }
 
 
-export const getGetSbomReportQueryOptions = <TData = Awaited<ReturnType<typeof getSbomReport>>, TError = ErrorType<unknown>>(firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSbomReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetSbomReportQueryOptions = <TData = Awaited<ReturnType<typeof getSbomReport>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSbomReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetSbomReportQueryKey(firmwareId);
+  const queryKey =  queryOptions?.queryKey ?? getGetSbomReportQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSbomReport>>> = ({ signal }) => getSbomReport(firmwareId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSbomReport>>> = ({ signal }) => getSbomReport(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSbomReport>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSbomReport>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSbomReportQueryResult = NonNullable<Awaited<ReturnType<typeof getSbomReport>>>
@@ -2081,11 +2081,11 @@ export type GetSbomReportQueryError = ErrorType<unknown>
  */
 
 export function useGetSbomReport<TData = Awaited<ReturnType<typeof getSbomReport>>, TError = ErrorType<unknown>>(
- firmwareId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSbomReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSbomReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetSbomReportQueryOptions(firmwareId,options)
+  const queryOptions = getGetSbomReportQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2098,22 +2098,22 @@ export function useGetSbomReport<TData = Awaited<ReturnType<typeof getSbomReport
 
 
 
-export const getGetSbomDownloadUrl = (firmwareId: number,
+export const getGetSbomDownloadUrl = (id: number,
     format: 'cyclonedx' | 'spdx' | 'csv',) => {
 
 
 
 
-  return `/api/reports/sbom/${firmwareId}/download/${format}`
+  return `/api/reports/sbom/${id}/download/${format}`
 }
 
 /**
  * @summary Download SBOM file in the requested format
  */
-export const getSbomDownload = async (firmwareId: number,
+export const getSbomDownload = async (id: number,
     format: 'cyclonedx' | 'spdx' | 'csv', options?: RequestInit): Promise<Blob> => {
 
-  return customFetch<Blob>(getGetSbomDownloadUrl(firmwareId,format),
+  return customFetch<Blob>(getGetSbomDownloadUrl(id,format),
   {
     ...options,
     method: 'GET'
@@ -2126,31 +2126,31 @@ export const getSbomDownload = async (firmwareId: number,
 
 
 
-export const getGetSbomDownloadQueryKey = (firmwareId: number,
+export const getGetSbomDownloadQueryKey = (id: number,
     format: 'cyclonedx' | 'spdx' | 'csv',) => {
     return [
-    `/api/reports/sbom/${firmwareId}/download/${format}`
+    `/api/reports/sbom/${id}/download/${format}`
     ] as const;
     }
 
 
-export const getGetSbomDownloadQueryOptions = <TData = Awaited<ReturnType<typeof getSbomDownload>>, TError = ErrorType<unknown>>(firmwareId: number,
+export const getGetSbomDownloadQueryOptions = <TData = Awaited<ReturnType<typeof getSbomDownload>>, TError = ErrorType<unknown>>(id: number,
     format: 'cyclonedx' | 'spdx' | 'csv', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSbomDownload>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetSbomDownloadQueryKey(firmwareId,format);
+  const queryKey =  queryOptions?.queryKey ?? getGetSbomDownloadQueryKey(id,format);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSbomDownload>>> = ({ signal }) => getSbomDownload(firmwareId,format, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSbomDownload>>> = ({ signal }) => getSbomDownload(id,format, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(firmwareId && format), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSbomDownload>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id && format), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSbomDownload>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSbomDownloadQueryResult = NonNullable<Awaited<ReturnType<typeof getSbomDownload>>>
@@ -2162,12 +2162,12 @@ export type GetSbomDownloadQueryError = ErrorType<unknown>
  */
 
 export function useGetSbomDownload<TData = Awaited<ReturnType<typeof getSbomDownload>>, TError = ErrorType<unknown>>(
- firmwareId: number,
+ id: number,
     format: 'cyclonedx' | 'spdx' | 'csv', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSbomDownload>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetSbomDownloadQueryOptions(firmwareId,format,options)
+  const queryOptions = getGetSbomDownloadQueryOptions(id,format,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

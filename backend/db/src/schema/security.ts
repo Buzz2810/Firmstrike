@@ -2,6 +2,7 @@ import { pgTable, serial, text, integer, boolean, timestamp, real } from "drizzl
 
 export const cveMatchesTable = pgTable("cve_matches", {
   id: serial("id").primaryKey(),
+  scanId: integer("scan_id"),
   firmwareId: integer("firmware_id").notNull(),
   cveId: text("cve_id").notNull(),
   severity: text("severity").notNull(),
@@ -14,6 +15,7 @@ export const cveMatchesTable = pgTable("cve_matches", {
 
 export const malwareHashesTable = pgTable("malware_hashes", {
   id: serial("id").primaryKey(),
+  scanId: integer("scan_id"),
   firmwareId: integer("firmware_id").notNull(),
   sha256: text("sha256").notNull(),
   threatScore: integer("threat_score").notNull().default(0),
@@ -26,6 +28,7 @@ export const malwareHashesTable = pgTable("malware_hashes", {
 
 export const emulationLogsTable = pgTable("emulation_logs", {
   id: serial("id").primaryKey(),
+  scanId: integer("scan_id"),
   firmwareId: integer("firmware_id").notNull(),
   status: text("status").notNull().default("starting"),
   architecture: text("architecture").notNull(),
@@ -38,7 +41,8 @@ export const emulationLogsTable = pgTable("emulation_logs", {
 
 export const aiReportsTable = pgTable("ai_reports", {
   id: serial("id").primaryKey(),
-  firmwareId: integer("firmware_id").notNull().unique(),
+  scanId: integer("scan_id").unique(),
+  firmwareId: integer("firmware_id").notNull(),
   summary: text("summary").notNull(),
   riskLevel: text("risk_level").notNull(),
   keyFindings: text("key_findings").notNull().default("[]"),
@@ -54,5 +58,6 @@ export const activityTable = pgTable("activity", {
   timestamp: timestamp("timestamp").notNull().defaultNow(),
   severity: text("severity").notNull().default("info"),
   firmwareId: integer("firmware_id"),
+  scanId: integer("scan_id"),
   firmwareName: text("firmware_name"),
 });

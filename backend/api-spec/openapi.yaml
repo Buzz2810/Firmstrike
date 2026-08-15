@@ -186,13 +186,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ScanResult"
 
-  /scanner/results/{firmwareId}:
+  /scanner/results/{scanId}:
     get:
       operationId: getScanResults
       tags: [scanner]
-      summary: Get scan results for firmware
+      summary: Get scan results for a scan execution (by scanId)
       parameters:
-        - name: firmwareId
+        - name: scanId
           in: path
           required: true
           schema:
@@ -207,13 +207,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/ScanResult"
 
-  /scanner/files/{firmwareId}:
+  /scanner/files/{scanId}:
     get:
       operationId: getExtractedFiles
       tags: [scanner]
-      summary: Get extracted files from firmware
+      summary: Get extracted files for a scan execution (by scanId)
       parameters:
-        - name: firmwareId
+        - name: scanId
           in: path
           required: true
           schema:
@@ -228,13 +228,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/ExtractedFile"
 
-  /scanner/binary/{firmwareId}:
+  /scanner/binary/{id}:
     post:
       operationId: runBinaryAnalysis
       tags: [scanner]
       summary: Run binary analysis on extracted binaries
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -253,13 +253,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/BinaryAnalysisResult"
 
-  /security/vulnerabilities/{firmwareId}:
+  /security/vulnerabilities/{id}:
     get:
       operationId: getVulnerabilities
       tags: [security]
       summary: Get vulnerabilities for firmware
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -274,13 +274,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/Vulnerability"
 
-  /security/score/{firmwareId}:
+  /security/score/{id}:
     get:
       operationId: getSecurityScore
       tags: [security]
       summary: Get security score for firmware
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -293,13 +293,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/SecurityScore"
 
-  /security/secrets/{firmwareId}:
+  /security/secrets/{id}:
     get:
       operationId: getHardcodedSecrets
       tags: [security]
       summary: Get hardcoded secrets found in firmware
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -314,13 +314,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/HardcodedSecret"
 
-  /security/dangerous-functions/{firmwareId}:
+  /security/dangerous-functions/{id}:
     get:
       operationId: getDangerousFunctions
       tags: [security]
       summary: Get dangerous function calls found in firmware
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -335,13 +335,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/DangerousFunction"
 
-  /cve/matches/{firmwareId}:
+  /cve/matches/{id}:
     get:
       operationId: getCveMatches
       tags: [cve]
       summary: Get CVE matches for firmware
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -356,13 +356,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/CveMatch"
 
-  /cve/scores/{firmwareId}:
+  /cve/scores/{id}:
     get:
       operationId: getCvssScores
       tags: [cve]
       summary: Get CVSS scores breakdown for firmware
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -394,13 +394,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/MalwareHash"
 
-  /malware/threat-score/{firmwareId}:
+  /malware/threat-score/{id}:
     get:
       operationId: getThreatScore
       tags: [malware]
       summary: Get threat score for firmware
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -413,13 +413,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ThreatScore"
 
-  /malware/virustotal/{firmwareId}:
+  /malware/virustotal/{id}:
     get:
       operationId: getVirusTotalResults
       tags: [malware]
       summary: Get VirusTotal scan results for firmware files
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -453,13 +453,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/EmulationLog"
 
-  /qemu/services/{firmwareId}:
+  /qemu/services/{id}:
     get:
       operationId: getRunningServices
       tags: [qemu]
       summary: Get running services from emulation
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -474,13 +474,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/EmulationLog"
 
-  /qemu/ports/{firmwareId}:
+  /qemu/ports/{id}:
     get:
       operationId: getOpenPorts
       tags: [qemu]
       summary: Get open ports detected during emulation
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -493,13 +493,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/OpenPortList"
 
-  /reports/pdf/{firmwareId}:
+  /reports/pdf/{id}:
     get:
       operationId: getPdfReport
       tags: [reports]
       summary: Get PDF report for a firmware scan
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -512,13 +512,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ReportMeta"
 
-  /reports/ai-summary/{firmwareId}:
+  /reports/ai-summary/{id}:
     get:
       operationId: getAiSummary
       tags: [reports]
       summary: Get AI-generated summary and risk analysis
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -531,13 +531,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/AiReport"
 
-  /reports/sbom/{firmwareId}:
+  /reports/sbom/{id}:
     get:
       operationId: getSbomReport
       tags: [reports]
       summary: Get SBOM metadata and component list for a firmware scan
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:
@@ -550,13 +550,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/SbomReport"
 
-  /reports/sbom/{firmwareId}/download/{format}:
+  /reports/sbom/{id}/download/{format}:
     get:
       operationId: getSbomDownload
       tags: [reports]
       summary: Download SBOM file in the requested format
       parameters:
-        - name: firmwareId
+        - name: id
           in: path
           required: true
           schema:

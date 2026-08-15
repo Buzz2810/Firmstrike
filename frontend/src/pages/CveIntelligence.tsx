@@ -231,22 +231,23 @@ function CveRow({ cve, idx }: { cve: any; idx: number }) {
 
 export default function CveIntelligence() {
   const params = useParams();
-  const firmwareId = parseInt(params.firmwareId || "0", 10);
+  const rawId = params.scanId || params.firmwareId || "0";
+  const targetId = parseInt(rawId, 10);
 
   const [search, setSearch]               = useState("");
   const [sortKey, setSortKey]             = useState<SortKey>("severity");
   const [sortDir, setSortDir]             = useState<SortDir>("desc");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
 
-  const { data: cves, isLoading: loadingCves } = useGetCveMatches(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetCveMatchesQueryKey(firmwareId) },
+  const { data: cves, isLoading: loadingCves } = useGetCveMatches(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetCveMatchesQueryKey(targetId) },
   });
 
-  const { data: cvss, isLoading: loadingCvss } = useGetCvssScores(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetCvssScoresQueryKey(firmwareId) },
+  const { data: cvss, isLoading: loadingCvss } = useGetCvssScores(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetCvssScoresQueryKey(targetId) },
   });
 
-  if (!firmwareId) return <div>Invalid ID</div>;
+  if (!targetId) return <div>Invalid ID</div>;
 
   // ─── Derived data ──────────────────────────────────────────────────────────
 
@@ -350,7 +351,7 @@ export default function CveIntelligence() {
 
       {/* ── Header ── */}
       <div className="flex items-center gap-4 mb-2">
-        <Link href={`/scan/${firmwareId}`}>
+        <Link href={`/scans/${targetId}`}>
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
             <ChevronLeft className="w-4 h-4" />
           </Button>

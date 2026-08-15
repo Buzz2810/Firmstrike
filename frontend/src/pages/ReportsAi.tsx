@@ -35,25 +35,26 @@ interface SbomReport {
 
 export default function ReportsAi() {
   const params = useParams();
-  const firmwareId = parseInt(params.firmwareId || "0", 10);
+  const rawId = params.scanId || params.firmwareId || "0";
+  const targetId = parseInt(rawId, 10);
 
-  const { data: aiReport, isLoading: loadingAi } = useGetAiSummary(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetAiSummaryQueryKey(firmwareId) }
+  const { data: aiReport, isLoading: loadingAi } = useGetAiSummary(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetAiSummaryQueryKey(targetId) }
   });
 
-  const { data: pdfMeta, isLoading: loadingPdf } = useGetPdfReport(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetPdfReportQueryKey(firmwareId) }
+  const { data: pdfMeta, isLoading: loadingPdf } = useGetPdfReport(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetPdfReportQueryKey(targetId) }
   });
 
-  const { data: sbomMeta, isLoading: loadingSbom } = useGetSbomReport(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetSbomReportQueryKey(firmwareId) }
+  const { data: sbomMeta, isLoading: loadingSbom } = useGetSbomReport(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetSbomReportQueryKey(targetId) }
   });
 
   const { data: history, isLoading: loadingHistory } = useGetScanHistory({
     query: { queryKey: getGetScanHistoryQueryKey() }
   });
 
-  if (!firmwareId) return <div>Invalid ID</div>;
+  if (!targetId) return <div>Invalid ID</div>;
 
   const handleDownload = () => {
     if (pdfMeta?.downloadUrl) {
@@ -75,7 +76,7 @@ export default function ReportsAi() {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-4">
-          <Link href={`/firmware`}>
+          <Link href={`/scans/${targetId}`}>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
               <ChevronLeft className="w-4 h-4" />
             </Button>

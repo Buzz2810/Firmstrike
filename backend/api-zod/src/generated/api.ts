@@ -127,10 +127,10 @@ export const StartScanBody = zod.object({
 
 
 /**
- * @summary Get scan results for firmware
+ * @summary Get scan results for a scan execution (by scanId)
  */
 export const GetScanResultsParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "scanId": zod.coerce.number()
 })
 
 export const GetScanResultsResponseItem = zod.object({
@@ -148,10 +148,10 @@ export const GetScanResultsResponse = zod.array(GetScanResultsResponseItem)
 
 
 /**
- * @summary Get extracted files from firmware
+ * @summary Get extracted files for a scan execution (by scanId)
  */
 export const GetExtractedFilesParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "scanId": zod.coerce.number()
 })
 
 export const GetExtractedFilesResponseItem = zod.object({
@@ -170,7 +170,7 @@ export const GetExtractedFilesResponse = zod.array(GetExtractedFilesResponseItem
  * @summary Run binary analysis on extracted binaries
  */
 export const RunBinaryAnalysisParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const RunBinaryAnalysisBody = zod.object({
@@ -191,7 +191,7 @@ export const RunBinaryAnalysisResponse = zod.object({
  * @summary Get vulnerabilities for firmware
  */
 export const GetVulnerabilitiesParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetVulnerabilitiesResponseItem = zod.object({
@@ -212,7 +212,7 @@ export const GetVulnerabilitiesResponse = zod.array(GetVulnerabilitiesResponseIt
  * @summary Get security score for firmware
  */
 export const GetSecurityScoreParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetSecurityScoreResponse = zod.object({
@@ -232,7 +232,7 @@ export const GetSecurityScoreResponse = zod.object({
  * @summary Get hardcoded secrets found in firmware
  */
 export const GetHardcodedSecretsParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetHardcodedSecretsResponseItem = zod.object({
@@ -251,7 +251,7 @@ export const GetHardcodedSecretsResponse = zod.array(GetHardcodedSecretsResponse
  * @summary Get dangerous function calls found in firmware
  */
 export const GetDangerousFunctionsParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetDangerousFunctionsResponseItem = zod.object({
@@ -270,7 +270,7 @@ export const GetDangerousFunctionsResponse = zod.array(GetDangerousFunctionsResp
  * @summary Get CVE matches for firmware
  */
 export const GetCveMatchesParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetCveMatchesResponseItem = zod.object({
@@ -291,7 +291,7 @@ export const GetCveMatchesResponse = zod.array(GetCveMatchesResponseItem)
  * @summary Get CVSS scores breakdown for firmware
  */
 export const GetCvssScoresParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetCvssScoresResponse = zod.object({
@@ -330,7 +330,7 @@ export const AnalyzeHashResponse = zod.object({
  * @summary Get threat score for firmware
  */
 export const GetThreatScoreParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetThreatScoreResponse = zod.object({
@@ -347,7 +347,7 @@ export const GetThreatScoreResponse = zod.object({
  * @summary Get VirusTotal scan results for firmware files
  */
 export const GetVirusTotalResultsParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetVirusTotalResultsResponseItem = zod.object({
@@ -377,7 +377,7 @@ export const StartEmulationBody = zod.object({
  * @summary Get running services from emulation
  */
 export const GetRunningServicesParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetRunningServicesResponseItem = zod.object({
@@ -398,7 +398,7 @@ export const GetRunningServicesResponse = zod.array(GetRunningServicesResponseIt
  * @summary Get open ports detected during emulation
  */
 export const GetOpenPortsParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetOpenPortsResponse = zod.object({
@@ -416,7 +416,7 @@ export const GetOpenPortsResponse = zod.object({
  * @summary Get PDF report for a firmware scan
  */
 export const GetPdfReportParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetPdfReportResponse = zod.object({
@@ -432,7 +432,7 @@ export const GetPdfReportResponse = zod.object({
  * @summary Get AI-generated summary and risk analysis
  */
 export const GetAiSummaryParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetAiSummaryResponse = zod.object({
@@ -450,7 +450,7 @@ export const GetAiSummaryResponse = zod.object({
  * @summary Get SBOM metadata and component list for a firmware scan
  */
 export const GetSbomReportParams = zod.object({
-  "firmwareId": zod.coerce.number()
+  "id": zod.coerce.number()
 })
 
 export const GetSbomReportResponse = zod.object({
@@ -476,7 +476,7 @@ export const GetSbomReportResponse = zod.object({
  * @summary Download SBOM file in the requested format
  */
 export const GetSbomDownloadParams = zod.object({
-  "firmwareId": zod.coerce.number(),
+  "id": zod.coerce.number(),
   "format": zod.enum(['cyclonedx', 'spdx', 'csv'])
 })
 

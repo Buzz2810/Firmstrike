@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { db, sbomReportsTable, sbomComponentsTable } from "@workspace/db";
-import { firmwareExtractPath, reportPath } from "../lib/paths.js";
+import { reportPath } from "../lib/paths.js";
 import { eq } from "drizzle-orm";
 
 export type SbomComponent = {
@@ -184,9 +184,9 @@ function writeCsv(components: SbomComponent[], outputPath: string): Promise<void
   return fs.writeFile(outputPath, rows.join("\n"), "utf8");
 }
 
-export async function generateSbomReport(firmwareId: number, extractPath: string): Promise<SbomReportPaths> {
+export async function generateSbomReport(scanId: number, firmwareId: number, extractPath: string): Promise<SbomReportPaths> {
   const components = await discoverPackages(extractPath);
-  const reportBase = reportPath(firmwareId).replace(/\.txt$/, "");
+  const reportBase = reportPath(firmwareId).replace(/\.txt$/, `-${scanId}`);
   const cyclonedxPath = `${reportBase}-sbom-cyclonedx.json`;
   const spdxPath = `${reportBase}-sbom-spdx.json`;
   const csvPath = `${reportBase}-sbom.csv`;
@@ -197,6 +197,7 @@ export async function generateSbomReport(firmwareId: number, extractPath: string
 
   await db.insert(sbomComponentsTable).values(
     components.map((component) => ({
+      scanId,
       firmwareId,
       name: component.name,
       version: component.version,
@@ -207,13 +208,14 @@ export async function generateSbomReport(firmwareId: number, extractPath: string
   );
 
   await db.insert(sbomReportsTable).values({
+    scanId,
     firmwareId,
     cyclonedxPath,
     spdxPath,
     csvPath,
     componentCount: components.length,
   }).onConflictDoUpdate({
-    target: sbomReportsTable.firmwareId,
+    target: sbomReportsTable.scanId,
     set: {
       cyclonedxPath,
       spdxPath,
@@ -226,9 +228,9 @@ export async function generateSbomReport(firmwareId: number, extractPath: string
   return { cyclonedxPath, spdxPath, csvPath };
 }
 
-export async function getSbomReport(firmwareId: number) {
-  const [report] = await db.select().from(sbomReportsTable).where(eq(sbomReportsTable.firmwareId, firmwareId));
+export async function getSbomReport(scanId: number) {
+  const [report] = await db.select().from(sbomReportsTable).where(eq(sbomReportsTable.scanId, scanId));
   if (!report) return null;
-  const components = await db.select().from(sbomComponentsTable).where(eq(sbomComponentsTable.firmwareId, firmwareId));
+  const components = await db.select().from(sbomComponentsTable).where(eq(sbomComponentsTable.scanId, scanId));
   return { report, components };
 }

@@ -11,6 +11,19 @@ A full-stack cybersecurity firmware analysis platform — upload firmware images
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string, `SESSION_SECRET` — session signing key
+ - Required env: `DATABASE_URL` — Postgres connection string, `SESSION_SECRET` — session signing key
+
+Notes:
+- Scans are tracked by a unique `scanId` (primary key in the `scan_results` table). Use `/api/scanner/results/{scanId}` and `/api/scanner/files/{scanId}` to fetch per-scan data. Supplying a firmware id instead of a scan id will resolve to the latest scan for that firmware.
+- For development run:
+
+```bash
+# Start backend (API):
+pnpm --filter @workspace/backend run dev
+
+# Start frontend (Vite):
+pnpm --filter @workspace/frontend run dev
+```
 
 ## Stack
 

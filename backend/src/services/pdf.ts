@@ -4,16 +4,17 @@ import { db, firmwareTable, vulnerabilitiesTable, aiReportsTable, scanResultsTab
 import { eq } from "drizzle-orm";
 import { reportPdfPath } from "../lib/paths.js";
 
-export async function generatePdfReport(firmwareId: number): Promise<{ path: string; size: number }> {
+export async function generatePdfReport(scanId: number): Promise<{ path: string; size: number }> {
+  const [scan] = await db.select().from(scanResultsTable).where(eq(scanResultsTable.id, scanId));
+  const firmwareId = scan?.firmwareId ?? scanId;
   const [fw] = await db.select().from(firmwareTable).where(eq(firmwareTable.id, firmwareId));
-  const vulns = await db.select().from(vulnerabilitiesTable).where(eq(vulnerabilitiesTable.firmwareId, firmwareId));
-  const [report] = await db.select().from(aiReportsTable).where(eq(aiReportsTable.firmwareId, firmwareId));
-  const [scan] = await db.select().from(scanResultsTable).where(eq(scanResultsTable.firmwareId, firmwareId));
+  const vulns = await db.select().from(vulnerabilitiesTable).where(eq(vulnerabilitiesTable.scanId, scanId));
+  const [report] = await db.select().from(aiReportsTable).where(eq(aiReportsTable.scanId, scanId));
 
   const keyFindings = report ? (JSON.parse(report.keyFindings) as string[]) : [];
   const recommendations = report ? (JSON.parse(report.recommendations) as string[]) : [];
 
-  const outPath = reportPdfPath(firmwareId);
+  const outPath = reportPdfPath(scanId);
 
   const doc = new PDFDocument({ margin: 50, size: "A4" });
   const stream = createWriteStream(outPath);

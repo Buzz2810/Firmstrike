@@ -17,29 +17,32 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 
 export default function SecurityAnalysis() {
   const params = useParams();
-  const firmwareId = parseInt(params.firmwareId || "0", 10);
+  const rawId = params.scanId || params.firmwareId || "0";
+  const targetId = parseInt(rawId, 10);
+
+  const { data: score, isLoading: loadingScore } = useGetSecurityScore(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetSecurityScoreQueryKey(targetId) }
+  });
+
+  const firmwareId = score?.firmwareId || targetId;
 
   const { data: firmware, isLoading: loadingFw } = useGetFirmware(firmwareId, {
     query: { enabled: !!firmwareId, queryKey: getGetFirmwareQueryKey(firmwareId) }
   });
 
-  const { data: score, isLoading: loadingScore } = useGetSecurityScore(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetSecurityScoreQueryKey(firmwareId) }
+  const { data: secrets, isLoading: loadingSecrets } = useGetHardcodedSecrets(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetHardcodedSecretsQueryKey(targetId) }
   });
 
-  const { data: secrets, isLoading: loadingSecrets } = useGetHardcodedSecrets(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetHardcodedSecretsQueryKey(firmwareId) }
+  const { data: functions, isLoading: loadingFuncs } = useGetDangerousFunctions(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetDangerousFunctionsQueryKey(targetId) }
   });
 
-  const { data: functions, isLoading: loadingFuncs } = useGetDangerousFunctions(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetDangerousFunctionsQueryKey(firmwareId) }
+  const { data: vulns, isLoading: loadingVulns } = useGetVulnerabilities(targetId, {
+    query: { enabled: !!targetId, queryKey: getGetVulnerabilitiesQueryKey(targetId) }
   });
 
-  const { data: vulns, isLoading: loadingVulns } = useGetVulnerabilities(firmwareId, {
-    query: { enabled: !!firmwareId, queryKey: getGetVulnerabilitiesQueryKey(firmwareId) }
-  });
-
-  if (!firmwareId) return <div>Invalid ID</div>;
+  if (!targetId) return <div>Invalid ID</div>;
 
   const getSeverityColor = (severity: string) => {
     switch(severity?.toLowerCase()) {
@@ -75,7 +78,7 @@ export default function SecurityAnalysis() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4 mb-2">
-        <Link href={`/scan/${firmwareId}`}>
+        <Link href={`/scans/${targetId}`}>
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
             <ChevronLeft className="w-4 h-4" />
           </Button>

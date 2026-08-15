@@ -16,6 +16,7 @@ export const scanResultsTable = pgTable("scan_results", {
 
 export const vulnerabilitiesTable = pgTable("vulnerabilities", {
   id: serial("id").primaryKey(),
+  scanId: integer("scan_id"),
   firmwareId: integer("firmware_id").notNull(),
   type: text("type").notNull(),
   severity: text("severity").notNull(),
@@ -28,6 +29,7 @@ export const vulnerabilitiesTable = pgTable("vulnerabilities", {
 
 export const hardcodedSecretsTable = pgTable("hardcoded_secrets", {
   id: serial("id").primaryKey(),
+  scanId: integer("scan_id"),
   firmwareId: integer("firmware_id").notNull(),
   type: text("type").notNull(),
   value: text("value").notNull(),
@@ -38,6 +40,7 @@ export const hardcodedSecretsTable = pgTable("hardcoded_secrets", {
 
 export const dangerousFunctionsTable = pgTable("dangerous_functions", {
   id: serial("id").primaryKey(),
+  scanId: integer("scan_id"),
   firmwareId: integer("firmware_id").notNull(),
   name: text("name").notNull(),
   file: text("file").notNull(),
@@ -48,6 +51,7 @@ export const dangerousFunctionsTable = pgTable("dangerous_functions", {
 
 export const extractedFilesTable = pgTable("extracted_files", {
   id: serial("id").primaryKey(),
+  scanId: integer("scan_id"),
   firmwareId: integer("firmware_id").notNull(),
   path: text("path").notNull(),
   type: text("type").notNull(),

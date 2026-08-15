@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   useListFirmware,
   getListFirmwareQueryKey,
@@ -157,19 +157,25 @@ export default function FirmwareLibrary() {
     );
   };
 
+  const [, setLocation] = useLocation();
+
   const handleStartScan = (id: number) => {
     startScanMutation.mutate(
       { data: { firmwareId: id } },
       {
-        onSuccess: () => {
+        onSuccess: (data: any) => {
           toast({
             title: "Scan Initiated",
-            description: "Firmware analysis in progress.",
+            description: `Scan #${data.id} in progress for Firmware #${id}.`,
           });
 
           queryClient.invalidateQueries({
             queryKey: getListFirmwareQueryKey()
           });
+
+          if (data?.id) {
+            setLocation(`/scans/${data.id}`);
+          }
         }
       }
     );
@@ -219,33 +225,33 @@ export default function FirmwareLibrary() {
     }
   };
 
-  const analysisLinks = (fwId: number) => [
+  const analysisLinks = (scanId: number) => [
     {
-      href: `/scan/${fwId}`,
+      href: `/scans/${scanId}`,
       label: "Scan Details",
       icon: Eye,
       color: "text-primary"
     },
     {
-      href: `/security/${fwId}`,
+      href: `/scans/${scanId}/security`,
       label: "Security Analysis",
       icon: ShieldAlert,
       color: "text-orange-500"
     },
     {
-      href: `/cve/${fwId}`,
+      href: `/scans/${scanId}/cve`,
       label: "CVE Intelligence",
       icon: Bug,
       color: "text-red-500"
     },
     {
-      href: `/malware/${fwId}`,
+      href: `/scans/${scanId}/malware`,
       label: "Malware Detection",
       icon: Fingerprint,
       color: "text-purple-500"
     },
     {
-      href: `/reports/${fwId}`,
+      href: `/scans/${scanId}/reports`,
       label: "Reports & AI",
       icon: FileText,
       color: "text-primary"

@@ -28,21 +28,55 @@ function Router() {
       <Route path="/firmware">
         <Layout><FirmwareLibrary /></Layout>
       </Route>
+
+      {/* Primary Scan ID routes */}
+      <Route path="/scans/:scanId">
+        {() => <Layout><ScanDetails /></Layout>}
+      </Route>
+      <Route path="/scans/:scanId/security">
+        {() => <Layout><SecurityAnalysis /></Layout>}
+      </Route>
+      <Route path="/scans/:scanId/cve">
+        {() => <Layout><CveIntelligence /></Layout>}
+      </Route>
+      <Route path="/scans/:scanId/malware">
+        {() => <Layout><MalwareDetection /></Layout>}
+      </Route>
+      <Route path="/scans/:scanId/reports">
+        {() => <Layout><ReportsAi /></Layout>}
+      </Route>
+
+      {/* Explicit sub-path routes */}
+      <Route path="/security/scan/:scanId">
+        {() => <Layout><SecurityAnalysis /></Layout>}
+      </Route>
+      <Route path="/cve/scan/:scanId">
+        {() => <Layout><CveIntelligence /></Layout>}
+      </Route>
+      <Route path="/malware/scan/:scanId">
+        {() => <Layout><MalwareDetection /></Layout>}
+      </Route>
+      <Route path="/reports/scan/:scanId">
+        {() => <Layout><ReportsAi /></Layout>}
+      </Route>
+
+      {/* Backward-compatibility fallback routes */}
       <Route path="/scan/:firmwareId">
-        {(params) => <Layout><ScanDetails /></Layout>}
+        {() => <Layout><ScanDetails /></Layout>}
       </Route>
       <Route path="/security/:firmwareId">
-        {(params) => <Layout><SecurityAnalysis /></Layout>}
+        {() => <Layout><SecurityAnalysis /></Layout>}
       </Route>
       <Route path="/cve/:firmwareId">
-        {(params) => <Layout><CveIntelligence /></Layout>}
+        {() => <Layout><CveIntelligence /></Layout>}
       </Route>
       <Route path="/malware/:firmwareId">
-        {(params) => <Layout><MalwareDetection /></Layout>}
+        {() => <Layout><MalwareDetection /></Layout>}
       </Route>
       <Route path="/reports/:firmwareId">
-        {(params) => <Layout><ReportsAi /></Layout>}
+        {() => <Layout><ReportsAi /></Layout>}
       </Route>
+
       <Route>
         <Layout><NotFound /></Layout>
       </Route>

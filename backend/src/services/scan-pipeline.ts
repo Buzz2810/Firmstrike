@@ -147,41 +147,7 @@ export async function runScanPipeline(
       .where(eq(firmwareTable.id, firmwareId));
 
     // ==========================================
-    // 2. RE-SCAN CLEANUP
-    // ==========================================
-
-    await db.transaction(async (tx) => {
-      await tx
-        .delete(extractedFilesTable)
-        .where(eq(extractedFilesTable.firmwareId, firmwareId));
-
-      await tx
-        .delete(hardcodedSecretsTable)
-        .where(eq(hardcodedSecretsTable.firmwareId, firmwareId));
-
-      await tx
-        .delete(dangerousFunctionsTable)
-        .where(eq(dangerousFunctionsTable.firmwareId, firmwareId));
-
-      await tx
-        .delete(vulnerabilitiesTable)
-        .where(eq(vulnerabilitiesTable.firmwareId, firmwareId));
-
-      await tx
-        .delete(cveMatchesTable)
-        .where(eq(cveMatchesTable.firmwareId, firmwareId));
-
-      await tx
-        .delete(malwareHashesTable)
-        .where(eq(malwareHashesTable.firmwareId, firmwareId));
-
-      await tx
-        .delete(emulationLogsTable)
-        .where(eq(emulationLogsTable.firmwareId, firmwareId));
-    });
-
-    // ==========================================
-    // 3. PYTHON FIRMWARE SCANNER
+    // 2. PYTHON FIRMWARE SCANNER
     // ==========================================
 
     const extractPath =
@@ -290,6 +256,7 @@ export async function runScanPipeline(
     if (extraction.files.length > 0) {
       await db.insert(extractedFilesTable).values(
         extraction.files.map((file) => ({
+          scanId,
           firmwareId,
           path: file.path,
           type: file.type,
@@ -437,15 +404,16 @@ export async function runScanPipeline(
     if (combinedSecrets.length > 0) {
       await db.insert(hardcodedSecretsTable).values(
         combinedSecrets.map((secret: any) => ({
+          scanId,
           firmwareId,
-          type: secret.type,
-          value: secret.value ?? null,
+          type: secret.type || "Hardcoded Secret",
+          value: secret.value || secret.type || "secret_detected",
           file:
             secret.file ??
             secret.affectedFile ??
-            null,
+            "firmware.bin",
           line:
-            secret.line ?? null,
+            typeof secret.line === "number" ? secret.line : 1,
           severity:
             secret.severity ?? "high",
         })),
@@ -459,14 +427,15 @@ export async function runScanPipeline(
     if (combinedDangerous.length > 0) {
       await db.insert(dangerousFunctionsTable).values(
         combinedDangerous.map((dangerous: any) => ({
+          scanId,
           firmwareId,
-          name: dangerous.name,
+          name: dangerous.name || "dangerous_function",
           file:
             dangerous.file ??
             dangerous.affectedFile ??
-            null,
+            "firmware.bin",
           line:
-            dangerous.line ?? null,
+            typeof dangerous.line === "number" ? dangerous.line : 1,
           risk:
             dangerous.risk ??
             dangerous.severity ??
@@ -486,6 +455,7 @@ export async function runScanPipeline(
       await db.insert(vulnerabilitiesTable).values(
         combinedVulnerabilities.map(
           (vulnerability: any) => ({
+            scanId,
             firmwareId,
 
             type:
@@ -503,14 +473,8 @@ export async function runScanPipeline(
             affectedFile:
               vulnerability.affectedFile ??
               vulnerability.file ??
-              null,
+              "firmware.bin",
 
-            line:
-              vulnerability.line ??
-              null,
-
-            // FIX:
-            // recommendation is required by the DB schema.
             recommendation:
               vulnerability.recommendation ??
               "Review and remediate this vulnerability.",
@@ -562,6 +526,7 @@ export async function runScanPipeline(
     if (cveMatches.length > 0) {
       await db.insert(cveMatchesTable).values(
         cveMatches.map((cve) => ({
+          scanId,
           firmwareId,
           ...cve,
         })),
@@ -571,6 +536,7 @@ export async function runScanPipeline(
         type: "cve_matched",
         message: `Identified ${cveMatches.length} CVE vulnerabilities in ${fw.name}`,
         severity: cveMatches.some((c) => c.severity === "critical") ? "critical" : "warning",
+        scanId,
         firmwareId,
         firmwareName: fw.name,
       });
@@ -633,6 +599,7 @@ export async function runScanPipeline(
       await db.insert(malwareHashesTable).values(
         dedupedMalwareResults.map(
           (malware: any) => ({
+            scanId,
             firmwareId,
 
             sha256:
@@ -702,6 +669,7 @@ export async function runScanPipeline(
 
       if (emulation) {
         await db.insert(emulationLogsTable).values({
+          scanId,
           firmwareId,
 
           status: "running",
@@ -751,6 +719,7 @@ export async function runScanPipeline(
 
     try {
       await generateSbomReport(
+        scanId,
         firmwareId,
         extractPath,
       );
@@ -870,6 +839,7 @@ export async function runScanPipeline(
         await db
           .insert(aiReportsTable)
           .values({
+            scanId,
             firmwareId,
 
             summary:
@@ -893,7 +863,7 @@ export async function runScanPipeline(
           })
           .onConflictDoUpdate({
             target:
-              aiReportsTable.firmwareId,
+              aiReportsTable.scanId,
 
             set: {
               summary:

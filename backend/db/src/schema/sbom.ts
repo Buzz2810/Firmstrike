@@ -4,7 +4,8 @@ import { z } from "zod/v4";
 
 export const sbomReportsTable = pgTable("sbom_reports", {
   id: serial("id").primaryKey(),
-  firmwareId: integer("firmware_id").notNull().unique(),
+  scanId: integer("scan_id").unique(),
+  firmwareId: integer("firmware_id").notNull(),
   generatedAt: timestamp("generated_at").notNull().defaultNow(),
   cyclonedxPath: text("cyclonedx_path").notNull(),
   spdxPath: text("spdx_path").notNull(),
@@ -14,6 +15,7 @@ export const sbomReportsTable = pgTable("sbom_reports", {
 
 export const sbomComponentsTable = pgTable("sbom_components", {
   id: serial("id").primaryKey(),
+  scanId: integer("scan_id"),
   firmwareId: integer("firmware_id").notNull(),
   name: text("name").notNull(),
   version: text("version").notNull().default("unknown"),

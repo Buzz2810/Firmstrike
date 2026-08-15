@@ -7,18 +7,20 @@ import { logger } from "../lib/logger.js";
  * ============================================================
  */
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+function getAiClient(): { client: GoogleGenAI | null; model: string } {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
 
-if (!GEMINI_API_KEY) {
-  logger.warn(
-    "GEMINI_API_KEY is not set. AI report generation will use the local fallback analyser."
-  );
+  if (!apiKey || apiKey.startsWith("AQ.") || apiKey === "your-api-key-here" || apiKey.length < 10) {
+    return { client: null, model };
+  }
+
+  try {
+    return { client: new GoogleGenAI({ apiKey }), model };
+  } catch {
+    return { client: null, model };
+  }
 }
-
-// Lazily create the AI client only when the key is available
-const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
-
-const GEMINI_MODEL = "gemini-flash-latest";
 
 const REQUEST_TIMEOUT = 120_000;
 
@@ -567,28 +569,25 @@ function fallbackReport(
 export async function generateAiReport(
   ctx: ScanContext
 ): Promise<AiReportContent> {
+  const { client, model } = getAiClient();
 
-  // If no API key, skip Gemini entirely and use the local fallback
-  if (!ai) {
+  // If no valid client, skip Gemini and use local fallback
+  if (!client) {
     logger.info(
       { firmware: ctx.firmwareName },
-      "GEMINI_API_KEY absent — using local fallback report."
+      "GEMINI_API_KEY absent or invalid — using local fallback report."
     );
     return fallbackReport(ctx);
   }
 
   const prompt = buildPrompt(ctx);
-
   const MAX_RETRIES = 2;
-
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-
     const startTime = Date.now();
 
     try {
-
       logger.info(
         {
           firmware: ctx.firmwareName,
@@ -598,23 +597,14 @@ export async function generateAiReport(
       );
 
       const response = await Promise.race([
-
-        ai.models.generateContent({
-
-          model: GEMINI_MODEL,
-
+        client.models.generateContent({
+          model,
           contents: prompt,
-
           config: {
-
             temperature: 0.25,
-
             maxOutputTokens: 2048,
-
             responseMimeType: "application/json"
-
           }
-
         }),
 
         new Promise((_, reject) =>
@@ -623,7 +613,6 @@ export async function generateAiReport(
             REQUEST_TIMEOUT
           )
         )
-
       ]);
 
       const duration = Date.now() - startTime;
@@ -643,21 +632,17 @@ export async function generateAiReport(
           : "";
 
       if (!text) {
-
         throw new Error(
           "Gemini returned an empty response."
         );
-
       }
 
       const parsed = parseJsonResponse(text);
 
       if (!parsed) {
-
         throw new Error(
           "Failed to parse Gemini JSON."
         );
-
       }
 
       logger.info(
@@ -670,12 +655,22 @@ export async function generateAiReport(
       );
 
       return parsed;
-
-    }
-
-    catch (err) {
-
+    } catch (err: any) {
       lastError = err;
+
+      const isAuthError =
+        err?.status === 401 ||
+        String(err?.message || "").includes("401") ||
+        String(err?.message || "").includes("UNAUTHENTICATED") ||
+        String(err?.message || "").includes("invalid authentication credentials");
+
+      if (isAuthError) {
+        logger.warn(
+          { firmware: ctx.firmwareName },
+          "Gemini API key is unauthenticated (401). Returning local fallback report."
+        );
+        return fallbackReport(ctx);
+      }
 
       logger.warn(
         {
@@ -686,7 +681,6 @@ export async function generateAiReport(
       );
 
       if (attempt < MAX_RETRIES) {
-
         const delay = 1000 * Math.pow(2, attempt);
 
         logger.info(
@@ -699,11 +693,8 @@ export async function generateAiReport(
         await new Promise(resolve =>
           setTimeout(resolve, delay)
         );
-
       }
-
     }
-
   }
 
   logger.error(
@@ -714,7 +705,6 @@ export async function generateAiReport(
   );
 
   return fallbackReport(ctx);
-
 }
 
 /**

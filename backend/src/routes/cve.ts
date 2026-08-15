@@ -1,21 +1,15 @@
 import { Router, type IRouter } from "express";
 import { db, cveMatchesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { resolveScanId } from "../lib/scans.js";
 
 const router: IRouter = Router();
 
-function parseFirmwareId(raw: string | string[]): number | null {
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const firmwareId = parseInt(value, 10);
-  if (isNaN(firmwareId) || firmwareId <= 0) return null;
-  return firmwareId;
-}
-
-async function getMatchesForFirmware(firmwareId: number) {
+async function getMatchesForScan(scanId: number) {
   const rawMatches = await db
     .select()
     .from(cveMatchesTable)
-    .where(eq(cveMatchesTable.firmwareId, firmwareId));
+    .where(eq(cveMatchesTable.scanId, scanId));
 
   const map = new Map<string, typeof rawMatches[0]>();
   for (const m of rawMatches) {
@@ -27,15 +21,16 @@ async function getMatchesForFirmware(firmwareId: number) {
   return Array.from(map.values());
 }
 
-router.get("/cve/matches/:firmwareId", async (req, res): Promise<void> => {
+router.get("/cve/matches/:id", async (req, res): Promise<void> => {
   try {
-    const firmwareId = parseFirmwareId(req.params.firmwareId);
-    if (firmwareId === null) {
-      res.status(400).json({ error: "Invalid firmwareId" });
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const resolved = await resolveScanId(raw);
+    if (!resolved) {
+      res.json([]);
       return;
     }
 
-    const matches = await getMatchesForFirmware(firmwareId);
+    const matches = await getMatchesForScan(resolved.scanId);
     res.json(matches);
   } catch (err) {
     console.error("Error fetching CVE matches:", err);
@@ -43,14 +38,16 @@ router.get("/cve/matches/:firmwareId", async (req, res): Promise<void> => {
   }
 });
 
-router.get("/cve/scores/:firmwareId", async (req, res): Promise<void> => {
+router.get("/cve/scores/:id", async (req, res): Promise<void> => {
   try {
-    const firmwareId = parseFirmwareId(req.params.firmwareId);
-    if (firmwareId === null) {
-      res.status(400).json({ error: "Invalid firmwareId" });
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const resolved = await resolveScanId(raw);
+    if (!resolved) {
+      res.json({ scanId: 0, critical: 0, high: 0, medium: 0, low: 0, averageScore: 0 });
       return;
     }
-    const matches = await getMatchesForFirmware(firmwareId);
+
+    const matches = await getMatchesForScan(resolved.scanId);
 
     const critical = matches.filter((m) => m.severity === "critical").length;
     const high = matches.filter((m) => m.severity === "high").length;
@@ -62,7 +59,8 @@ router.get("/cve/scores/:firmwareId", async (req, res): Promise<void> => {
         : 0;
 
     res.json({
-      firmwareId,
+      scanId: resolved.scanId,
+      firmwareId: resolved.firmwareId,
       critical,
       high,
       medium,

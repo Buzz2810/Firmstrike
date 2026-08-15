@@ -5,9 +5,7 @@ import path from "node:path";
 dotenv.config({
   path: path.resolve(process.cwd(), ".env"),
 });
-console.log("Working directory:", process.cwd());
-console.log("Env path:", path.resolve(process.cwd(), ".env"));
-console.log("DATABASE_URL =", process.env.DATABASE_URL);
+// Environment loaded; avoid logging DATABASE_URL or other secrets here.
 
 // Import the app only after .env has been loaded
 const { default: app } = await import("./app");
