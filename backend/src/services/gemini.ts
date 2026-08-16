@@ -3,43 +3,81 @@ import { logger } from "../lib/logger.js";
 
 /**
  * ============================================================
- * Google Gemini Configuration
+ * GEMINI CONFIGURATION
  * ============================================================
  */
 
-function getAiClient(): { client: GoogleGenAI | null; model: string } {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+const REQUEST_TIMEOUT = 120_000;
+const MAX_RETRIES = 2;
 
-  if (!apiKey || apiKey.startsWith("AQ.") || apiKey === "your-api-key-here" || apiKey.length < 10) {
-    return { client: null, model };
+function getAiClient(): {
+  client: GoogleGenAI | null;
+  model: string;
+} {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+
+  const model =
+    process.env.GEMINI_MODEL?.trim() ||
+    "gemini-2.5-flash";
+
+  // Only reject missing/placeholder keys.
+  // Do NOT reject keys based on their prefix.
+  if (
+    !apiKey ||
+    apiKey === "your-api-key-here" ||
+    apiKey.length < 10
+  ) {
+    return {
+      client: null,
+      model,
+    };
   }
 
   try {
-    return { client: new GoogleGenAI({ apiKey }), model };
-  } catch {
-    return { client: null, model };
+    return {
+      client: new GoogleGenAI({
+        apiKey,
+      }),
+      model,
+    };
+  } catch (error) {
+    logger.error(
+      { err: error },
+      "Failed to initialize Gemini client",
+    );
+
+    return {
+      client: null,
+      model,
+    };
   }
 }
 
-const REQUEST_TIMEOUT = 120_000;
-
 /**
  * ============================================================
- * Types
+ * TYPES
  * ============================================================
  */
 
 export type AiReportContent = {
   summary: string;
-  riskLevel: "critical" | "high" | "medium" | "low";
+
+  riskLevel:
+    | "critical"
+    | "high"
+    | "medium"
+    | "low";
+
   keyFindings: string[];
+
   recommendations: string[];
+
   exploitProbability: number;
 };
 
 export type ScanContext = {
   firmwareName: string;
+
   architecture: string;
 
   vulnerabilities: Array<{
@@ -74,35 +112,28 @@ export type ScanContext = {
 
 /**
  * ============================================================
- * Prompt Builder
+ * PROMPT
  * ============================================================
  */
 
 function buildPrompt(ctx: ScanContext): string {
   return `
-You are a Senior Firmware Security Researcher, Reverse Engineer, Malware Analyst,
-Threat Intelligence Expert, CVE Researcher, Embedded Linux Security Specialist,
+You are a Senior Firmware Security Researcher,
+Reverse Engineer, Malware Analyst, Threat Intelligence Expert,
+CVE Researcher, Embedded Linux Security Specialist,
 and IoT Security Consultant.
 
-Your task is to analyze the firmware scan results below and produce a professional
-security assessment.
+Analyze the firmware scan results below.
 
 Return ONLY valid JSON.
 
-Do NOT return:
+Do not return Markdown.
+Do not return code fences.
+Do not return explanations outside JSON.
 
-- Markdown
-- Triple backticks
-- XML
-- HTML
-- Code
-- Explanations
-- Thinking
-- <think> tags
-
-======================================================
-
-Firmware
+==================================================
+FIRMWARE
+==================================================
 
 Name:
 ${ctx.firmwareName}
@@ -110,219 +141,248 @@ ${ctx.firmwareName}
 Architecture:
 ${ctx.architecture}
 
-======================================================
+==================================================
+COMPONENTS
+==================================================
 
-Detected Components
+${
+  ctx.components.length > 0
+    ? ctx.components.join(", ")
+    : "None detected"
+}
 
-${ctx.components.join(", ") || "Unknown"}
+==================================================
+VULNERABILITIES
+==================================================
 
-======================================================
+Count:
+${ctx.vulnerabilities.length}
 
-Vulnerabilities (${ctx.vulnerabilities.length})
-
-${ctx.vulnerabilities
-  .slice(0,20)
-  .map(v=>`
+${
+  ctx.vulnerabilities.length > 0
+    ? ctx.vulnerabilities
+        .slice(0, 30)
+        .map(
+          (v, index) => `
+${index + 1}.
 Severity: ${v.severity}
 Type: ${v.type}
 Description: ${v.description}
 File: ${v.file}
-`).join("\n")}
+`,
+        )
+        .join("\n")
+    : "None detected"
+}
 
-======================================================
+==================================================
+HARDCODED SECRETS
+==================================================
 
-Hardcoded Secrets (${ctx.secrets.length})
+Count:
+${ctx.secrets.length}
 
-${ctx.secrets
-  .slice(0,15)
-  .map(s=>`
+${
+  ctx.secrets.length > 0
+    ? ctx.secrets
+        .slice(0, 30)
+        .map(
+          (s, index) => `
+${index + 1}.
 Type: ${s.type}
 Severity: ${s.severity}
 File: ${s.file}
-`).join("\n")}
+`,
+        )
+        .join("\n")
+    : "None detected"
+}
 
-======================================================
+==================================================
+DANGEROUS FUNCTIONS
+==================================================
 
-Dangerous Functions (${ctx.dangerousFunctions.length})
+Count:
+${ctx.dangerousFunctions.length}
 
-${ctx.dangerousFunctions
-  .slice(0,15)
-  .map(d=>`
+${
+  ctx.dangerousFunctions.length > 0
+    ? ctx.dangerousFunctions
+        .slice(0, 30)
+        .map(
+          (d, index) => `
+${index + 1}.
 Function: ${d.name}
 Risk: ${d.risk}
 File: ${d.file}
-`).join("\n")}
+`,
+        )
+        .join("\n")
+    : "None detected"
+}
 
-======================================================
+==================================================
+CVE MATCHES
+==================================================
 
-Known CVEs
+Count:
+${ctx.cveIds.length}
 
-${ctx.cveIds.join(", ") || "None"}
+${
+  ctx.cveIds.length > 0
+    ? ctx.cveIds.join(", ")
+    : "None detected"
+}
 
-======================================================
+==================================================
+MALWARE INDICATORS
+==================================================
 
-Malware Indicators
+Count:
+${ctx.malwareFindings.length}
 
-${ctx.malwareFindings.length
-? ctx.malwareFindings.map(m=>`
+${
+  ctx.malwareFindings.length > 0
+    ? ctx.malwareFindings
+        .map(
+          (m, index) => `
+${index + 1}.
 File: ${m.fileName}
 Threat Score: ${m.threatScore}
 Detection: ${m.result}
-`).join("\n")
-: "None"}
-
-======================================================
-
-Perform a complete firmware security assessment.
-
-Consider:
-
-• Authentication weaknesses
-
-• Privilege escalation opportunities
-
-• Command injection risks
-
-• Buffer overflow possibilities
-
-• Unsafe C/C++ functions
-
-• Hardcoded passwords
-
-• Hardcoded SSH keys
-
-• Hardcoded certificates
-
-• Weak cryptography
-
-• Insecure firmware update mechanisms
-
-• Outdated third-party libraries
-
-• BusyBox vulnerabilities
-
-• OpenSSL vulnerabilities
-
-• Exposed network services
-
-• Malware indicators
-
-• Known CVEs
-
-• Overall attack surface
-
-======================================================
-
-Determine:
-
-1. Overall risk
-
-2. Most dangerous findings
-
-3. Exploit probability
-
-4. Immediate remediation priorities
-
-5. Executive summary
-
-======================================================
-
-Return EXACTLY
-
-{
-"summary":"",
-"riskLevel":"critical|high|medium|low",
-"keyFindings":[
-"",
-"",
-"",
-"",
-"",
-""
-],
-"recommendations":[
-"",
-"",
-"",
-"",
-"",
-""
-],
-"exploitProbability":0.78
+`,
+        )
+        .join("\n")
+    : "None detected"
 }
 
-Rules
+==================================================
+SECURITY ASSESSMENT
+==================================================
+
+Evaluate:
+
+- Authentication weaknesses
+- Privilege escalation
+- Command injection
+- Buffer overflow
+- Unsafe C/C++ functions
+- Hardcoded credentials
+- Hardcoded SSH keys
+- Hardcoded certificates
+- Weak cryptography
+- Insecure update mechanisms
+- Outdated libraries
+- BusyBox vulnerabilities
+- OpenSSL vulnerabilities
+- Exposed services
+- Malware indicators
+- Known CVEs
+- Overall attack surface
+
+==================================================
+OUTPUT
+==================================================
+
+Return exactly this JSON structure:
+
+{
+  "summary": "",
+  "riskLevel": "critical",
+  "keyFindings": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "recommendations": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "exploitProbability": 0.5
+}
+
+Rules:
 
 summary:
 3-5 professional sentences.
 
 keyFindings:
-Exactly 6.
+Exactly 6 items.
 
 recommendations:
-Exactly 6.
+Exactly 6 items.
 
 exploitProbability:
-Between 0 and 1.
+Number between 0 and 1.
+
+riskLevel:
+Must be one of:
+critical
+high
+medium
+low
 
 Return ONLY JSON.
 `;
 }
-/**
- * ============================================================
- * JSON Response Parser
- * ============================================================
- */
-
-function cleanResponse(text: string): string {
-  return text
-    .replace(/```json/gi, "")
-    .replace(/```/g, "")
-    .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    .trim();
-}
-
-function isValidRiskLevel(
-  risk: unknown
-): risk is AiReportContent["riskLevel"] {
-  return (
-    risk === "critical" ||
-    risk === "high" ||
-    risk === "medium" ||
-    risk === "low"
-  );
-}
 
 /**
  * ============================================================
- * Advanced Gemini JSON Parser
+ * JSON EXTRACTION
  * ============================================================
  */
 
 function extractJson(text: string): string | null {
-  if (!text) return null;
+  if (!text) {
+    return null;
+  }
 
-  let cleaned = text
+  const cleaned = text
     .replace(/```json/gi, "")
     .replace(/```/g, "")
-    .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, "")
+    .replace(
+      /<think>[\s\S]*?<\/think>/gi,
+      "",
+    )
+    .replace(
+      /<thinking>[\s\S]*?<\/thinking>/gi,
+      "",
+    )
     .trim();
 
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
 
-  if (start === -1 || end === -1) {
+  if (
+    start === -1 ||
+    end === -1 ||
+    end <= start
+  ) {
     return null;
   }
 
   return cleaned.substring(start, end + 1);
 }
 
+/**
+ * ============================================================
+ * NORMALIZATION
+ * ============================================================
+ */
+
 function normalizeRiskLevel(
-  risk: string | undefined
+  risk: unknown,
 ): AiReportContent["riskLevel"] {
-  switch ((risk ?? "").toLowerCase()) {
+  switch (
+    String(risk ?? "").toLowerCase()
+  ) {
     case "critical":
       return "critical";
 
@@ -337,106 +397,130 @@ function normalizeRiskLevel(
   }
 }
 
-function clampProbability(value: unknown): number {
-  if (typeof value !== "number") {
+function clampProbability(
+  value: unknown,
+): number {
+  const number =
+    typeof value === "number"
+      ? value
+      : Number(value);
+
+  if (!Number.isFinite(number)) {
     return 0.5;
   }
 
-  return Math.max(
-    0,
-    Math.min(
-      1,
-      Number(value.toFixed(2))
-    )
+  return Number(
+    Math.max(
+      0,
+      Math.min(1, number),
+    ).toFixed(2),
   );
 }
 
+/**
+ * ============================================================
+ * PARSE GEMINI RESPONSE
+ * ============================================================
+ */
+
 function parseJsonResponse(
-  text: string
+  text: string,
 ): AiReportContent | null {
-
   try {
-
     const json = extractJson(text);
 
     if (!json) {
       logger.warn(
-        "Gemini response does not contain valid JSON."
+        "Gemini response did not contain JSON.",
       );
+
       return null;
     }
 
     const parsed = JSON.parse(json);
 
-    if (!parsed.summary) {
+    if (
+      !parsed ||
+      typeof parsed.summary !== "string"
+    ) {
       logger.warn(
-        "Gemini JSON missing summary."
+        "Gemini JSON missing valid summary.",
       );
+
       return null;
     }
 
-    const findings = Array.isArray(parsed.keyFindings)
-      ? parsed.keyFindings
-          .filter(Boolean)
-          .map(String)
-      : [];
+    const findings =
+      Array.isArray(
+        parsed.keyFindings,
+      )
+        ? parsed.keyFindings
+            .filter(Boolean)
+            .map(String)
+        : [];
 
-    const recommendations = Array.isArray(parsed.recommendations)
-      ? parsed.recommendations
-          .filter(Boolean)
-          .map(String)
-      : [];
+    const recommendations =
+      Array.isArray(
+        parsed.recommendations,
+      )
+        ? parsed.recommendations
+            .filter(Boolean)
+            .map(String)
+        : [];
 
     while (findings.length < 6) {
       findings.push(
-        "No additional significant finding."
+        "No additional significant finding.",
       );
     }
 
-    while (recommendations.length < 6) {
+    while (
+      recommendations.length < 6
+    ) {
       recommendations.push(
-        "Further manual firmware review is recommended."
+        "Further manual firmware security review is recommended.",
       );
     }
 
     return {
+      summary:
+        parsed.summary.trim(),
 
-      summary: String(parsed.summary),
+      riskLevel:
+        normalizeRiskLevel(
+          parsed.riskLevel,
+        ),
 
-      riskLevel: normalizeRiskLevel(
-        parsed.riskLevel
-      ),
+      keyFindings:
+        findings.slice(0, 6),
 
-      keyFindings: findings.slice(0, 6),
+      recommendations:
+        recommendations.slice(0, 6),
 
-      recommendations: recommendations.slice(0, 6),
-
-      exploitProbability: clampProbability(
-        parsed.exploitProbability
-      )
-
+      exploitProbability:
+        clampProbability(
+          parsed.exploitProbability,
+        ),
     };
-
-  } catch (err) {
-
+  } catch (error) {
     logger.error(
-      { err },
-      "Failed to parse Gemini JSON response."
+      { err: error },
+      "Failed to parse Gemini response.",
     );
 
     return null;
-
   }
-
 }
 
 /**
  * ============================================================
- * Risk Calculation
+ * LOCAL RISK CALCULATION
  * ============================================================
  */
 
-function calculateRisk(ctx: ScanContext): {
+function calculateRisk(
+  ctx: ScanContext,
+): {
   score: number;
   level: AiReportContent["riskLevel"];
 } {
@@ -444,47 +528,72 @@ function calculateRisk(ctx: ScanContext): {
 
   score +=
     ctx.vulnerabilities.filter(
-      (v) => v.severity.toLowerCase() === "critical"
+      (v) =>
+        v.severity.toLowerCase() ===
+        "critical",
     ).length * 35;
 
   score +=
     ctx.vulnerabilities.filter(
-      (v) => v.severity.toLowerCase() === "high"
+      (v) =>
+        v.severity.toLowerCase() ===
+        "high",
     ).length * 20;
+
+  score +=
+    ctx.vulnerabilities.filter(
+      (v) =>
+        v.severity.toLowerCase() ===
+        "medium",
+    ).length * 10;
 
   score += ctx.secrets.length * 8;
 
-  score += ctx.dangerousFunctions.length * 6;
+  score +=
+    ctx.dangerousFunctions.length * 6;
 
   score += ctx.cveIds.length * 10;
 
-  score += ctx.malwareFindings.reduce(
-    (sum, item) => sum + item.threatScore,
-    0
-  );
+  score +=
+    ctx.malwareFindings.reduce(
+      (sum, malware) =>
+        sum +
+        Number(
+          malware.threatScore || 0,
+        ),
+      0,
+    );
 
-  score = Math.min(score, 100);
+  score = Math.min(100, score);
 
-  let level: AiReportContent["riskLevel"];
+  let level:
+    AiReportContent["riskLevel"];
 
-  if (score >= 80) level = "critical";
-  else if (score >= 60) level = "high";
-  else if (score >= 30) level = "medium";
-  else level = "low";
+  if (score >= 80) {
+    level = "critical";
+  } else if (score >= 60) {
+    level = "high";
+  } else if (score >= 30) {
+    level = "medium";
+  } else {
+    level = "low";
+  }
 
-  return { score, level };
+  return {
+    score,
+    level,
+  };
 }
 
 /**
  * ============================================================
- * Smart Fallback Report
+ * FALLBACK REPORT
  * ============================================================
  */
 
 function fallbackReport(
-  ctx: ScanContext
+  ctx: ScanContext,
 ): AiReportContent {
-
   const risk = calculateRisk(ctx);
 
   const findings: string[] = [];
@@ -494,8 +603,8 @@ function fallbackReport(
       .slice(0, 3)
       .map(
         (v) =>
-          `[${v.severity}] ${v.type}: ${v.description}`
-      )
+          `[${v.severity}] ${v.type}: ${v.description}`,
+      ),
   );
 
   findings.push(
@@ -503,8 +612,8 @@ function fallbackReport(
       .slice(0, 2)
       .map(
         (s) =>
-          `Hardcoded ${s.type} detected in ${s.file}`
-      )
+          `Hardcoded ${s.type} detected in ${s.file}`,
+      ),
   );
 
   findings.push(
@@ -512,16 +621,35 @@ function fallbackReport(
       .slice(0, 2)
       .map(
         (d) =>
-          `Dangerous function ${d.name} found in ${d.file}`
-      )
+          `Dangerous function ${d.name} found in ${d.file}`,
+      ),
+  );
+
+  findings.push(
+    ...ctx.cveIds
+      .slice(0, 2)
+      .map(
+        (cve) =>
+          `Known CVE match detected: ${cve}`,
+      ),
+  );
+
+  findings.push(
+    ...ctx.malwareFindings
+      .slice(0, 2)
+      .map(
+        (malware) =>
+          `Malware indicator detected in ${malware.fileName} with threat score ${malware.threatScore}`,
+      ),
   );
 
   while (findings.length < 6) {
-    findings.push("No additional significant finding.");
+    findings.push(
+      "No additional significant finding.",
+    );
   }
 
   return {
-
     summary:
       `Firmware analysis identified ${ctx.vulnerabilities.length} vulnerabilities, ` +
       `${ctx.secrets.length} hardcoded secrets, ` +
@@ -532,10 +660,10 @@ function fallbackReport(
 
     riskLevel: risk.level,
 
-    keyFindings: findings.slice(0, 6),
+    keyFindings:
+      findings.slice(0, 6),
 
     recommendations: [
-
       "Remove all hardcoded credentials and replace them with secure secret storage.",
 
       "Patch all vulnerable components associated with detected CVEs.",
@@ -546,152 +674,178 @@ function fallbackReport(
 
       "Perform manual firmware review and penetration testing before production deployment.",
 
-      "Continuously monitor firmware integrity and deploy signed firmware updates."
-
+      "Continuously monitor firmware integrity and deploy signed firmware updates.",
     ],
 
-    exploitProbability: Number((risk.score / 100).toFixed(2))
-
+    exploitProbability:
+      Number(
+        (risk.score / 100).toFixed(2),
+      ),
   };
 }
-/**
- * ============================================================
- * Gemini AI Report Generation
- * ============================================================
- */
 
 /**
  * ============================================================
- * Enterprise Gemini AI Report Generator
+ * GEMINI REPORT GENERATION
  * ============================================================
  */
 
 export async function generateAiReport(
-  ctx: ScanContext
+  ctx: ScanContext,
 ): Promise<AiReportContent> {
-  const { client, model } = getAiClient();
+  const {
+    client,
+    model,
+  } = getAiClient();
 
-  // If no valid client, skip Gemini and use local fallback
+  logger.info(
+    {
+      firmware: ctx.firmwareName,
+      vulnerabilities:
+        ctx.vulnerabilities.length,
+      secrets:
+        ctx.secrets.length,
+      dangerousFunctions:
+        ctx.dangerousFunctions.length,
+      cves:
+        ctx.cveIds.length,
+      malware:
+        ctx.malwareFindings.length,
+      components:
+        ctx.components.length,
+      model,
+    },
+    "Preparing AI firmware security report",
+  );
+
   if (!client) {
-    logger.info(
-      { firmware: ctx.firmwareName },
-      "GEMINI_API_KEY absent or invalid — using local fallback report."
+    logger.warn(
+      {
+        firmware:
+          ctx.firmwareName,
+        model,
+      },
+      "Gemini unavailable. Using local fallback report.",
     );
+
     return fallbackReport(ctx);
   }
 
   const prompt = buildPrompt(ctx);
-  const MAX_RETRIES = 2;
+
   let lastError: unknown;
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const startTime = Date.now();
-
+  for (
+    let attempt = 1;
+    attempt <= MAX_RETRIES;
+    attempt++
+  ) {
     try {
       logger.info(
         {
-          firmware: ctx.firmwareName,
-          attempt
-        },
-        "Generating firmware report with Gemini..."
-      );
-
-      const response = await Promise.race([
-        client.models.generateContent({
+          firmware:
+            ctx.firmwareName,
+          attempt,
           model,
-          contents: prompt,
-          config: {
-            temperature: 0.25,
-            maxOutputTokens: 2048,
-            responseMimeType: "application/json"
-          }
-        }),
-
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error("Gemini request timeout")),
-            REQUEST_TIMEOUT
-          )
-        )
-      ]);
-
-      const duration = Date.now() - startTime;
-
-      logger.info(
-        {
-          duration
         },
-        "Gemini response received."
+        "Calling Gemini for firmware security report",
       );
+
+      const response =
+        await Promise.race([
+          client.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              temperature: 0.2,
+              maxOutputTokens: 4096,
+              responseMimeType:
+                "application/json",
+            },
+          }),
+
+          new Promise<never>(
+            (_, reject) =>
+              setTimeout(
+                () =>
+                  reject(
+                    new Error(
+                      "Gemini request timeout",
+                    ),
+                  ),
+                REQUEST_TIMEOUT,
+              ),
+          ),
+        ]);
 
       const text =
-        typeof response === "object" &&
+        typeof response ===
+          "object" &&
         response &&
         "text" in response
-          ? String(response.text)
+          ? String(
+              response.text,
+            ).trim()
           : "";
 
       if (!text) {
         throw new Error(
-          "Gemini returned an empty response."
+          "Gemini returned an empty response.",
         );
       }
 
-      const parsed = parseJsonResponse(text);
+      const parsed =
+        parseJsonResponse(text);
 
       if (!parsed) {
         throw new Error(
-          "Failed to parse Gemini JSON."
+          "Gemini returned invalid JSON.",
         );
       }
 
       logger.info(
         {
-          duration,
-          risk: parsed.riskLevel,
-          probability: parsed.exploitProbability
+          firmware:
+            ctx.firmwareName,
+          attempt,
+          risk:
+            parsed.riskLevel,
+          exploitProbability:
+            parsed.exploitProbability,
         },
-        "Firmware report generated successfully."
+        "Gemini AI report generated successfully",
       );
 
       return parsed;
-    } catch (err: any) {
-      lastError = err;
-
-      const isAuthError =
-        err?.status === 401 ||
-        String(err?.message || "").includes("401") ||
-        String(err?.message || "").includes("UNAUTHENTICATED") ||
-        String(err?.message || "").includes("invalid authentication credentials");
-
-      if (isAuthError) {
-        logger.warn(
-          { firmware: ctx.firmwareName },
-          "Gemini API key is unauthenticated (401). Returning local fallback report."
-        );
-        return fallbackReport(ctx);
-      }
+    } catch (error) {
+      lastError = error;
 
       logger.warn(
         {
+          firmware:
+            ctx.firmwareName,
           attempt,
-          err
+          error:
+            error instanceof Error
+              ? error.message
+              : error,
         },
-        "Gemini request failed."
+        "Gemini report generation failed",
       );
 
-      if (attempt < MAX_RETRIES) {
-        const delay = 1000 * Math.pow(2, attempt);
+      if (
+        attempt < MAX_RETRIES
+      ) {
+        const delay =
+          1000 *
+          Math.pow(2, attempt);
 
-        logger.info(
-          {
-            delay
-          },
-          "Retrying Gemini request..."
-        );
-
-        await new Promise(resolve =>
-          setTimeout(resolve, delay)
+        await new Promise(
+          (resolve) =>
+            setTimeout(
+              resolve,
+              delay,
+            ),
         );
       }
     }
@@ -699,9 +853,11 @@ export async function generateAiReport(
 
   logger.error(
     {
-      lastError
+      firmware:
+        ctx.firmwareName,
+      error: lastError,
     },
-    "All Gemini attempts failed. Returning fallback report."
+    "All Gemini attempts failed. Using local fallback report.",
   );
 
   return fallbackReport(ctx);
@@ -709,183 +865,128 @@ export async function generateAiReport(
 
 /**
  * ============================================================
- * Gemini Health Check
- * ============================================================
- */
-
-
-
-/**
- * ============================================================
- * Export Default (Optional)
- * ============================================================
- */
-/**
- * ============================================================
- * AI Confidence & Utility Helpers
- * ============================================================
- */
-
-function calculateConfidence(report: AiReportContent): number {
-  let confidence = 0.5;
-
-  switch (report.riskLevel) {
-    case "critical":
-      confidence += 0.20;
-      break;
-
-    case "high":
-      confidence += 0.15;
-      break;
-
-    case "medium":
-      confidence += 0.10;
-      break;
-
-    case "low":
-      confidence += 0.05;
-      break;
-  }
-
-  confidence += Math.min(report.keyFindings.length * 0.02, 0.12);
-  confidence += Math.min(report.recommendations.length * 0.02, 0.12);
-
-  return Math.min(1, Number(confidence.toFixed(2)));
-}
-
-/**
- * ============================================================
- * Response Sanitizer
- * ============================================================
- */
-
-function sanitizeReport(
-  report: AiReportContent
-): AiReportContent {
-
-  report.summary = report.summary.trim();
-
-  report.keyFindings = report.keyFindings
-    .map(item => item.trim())
-    .filter(Boolean)
-    .slice(0, 6);
-
-  report.recommendations = report.recommendations
-    .map(item => item.trim())
-    .filter(Boolean)
-    .slice(0, 6);
-
-  report.exploitProbability = Math.max(
-    0,
-    Math.min(1, report.exploitProbability)
-  );
-
-  return report;
-}
-
-/**
- * ============================================================
- * Gemini Health Check
+ * GEMINI HEALTH CHECK
  * ============================================================
  */
 
 export async function checkGeminiHealth(): Promise<boolean> {
+  const {
+    client,
+    model,
+  } = getAiClient();
 
-  if (!ai) return false;
+  if (!client) {
+    return false;
+  }
 
   try {
+    const response =
+      await Promise.race([
+        client.models.generateContent({
+          model,
+          contents:
+            "Reply with OK only.",
+          config: {
+            temperature: 0,
+            maxOutputTokens: 8,
+          },
+        }),
 
-    const response = await ai.models.generateContent({
-
-      model: GEMINI_MODEL,
-
-      contents: "Reply with OK only.",
-
-      config: {
-
-        temperature: 0,
-
-        maxOutputTokens: 8
-
-      }
-
-    });
+        new Promise<never>(
+          (_, reject) =>
+            setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    "Gemini health check timeout",
+                  ),
+                ),
+              30_000,
+            ),
+        ),
+      ]);
 
     const text =
-      typeof response === "object" &&
+      typeof response ===
+        "object" &&
       response &&
       "text" in response
-        ? String(response.text).trim()
+        ? String(
+            response.text,
+          ).trim()
         : "";
 
     if (!text) {
-
-      logger.warn(
-        "Gemini health check returned an empty response."
-      );
-
       return false;
-
     }
 
     logger.info(
-      "Gemini health check successful."
+      {
+        model,
+      },
+      "Gemini health check successful",
     );
 
     return true;
-
-  } catch (err) {
-
-    logger.error(
-      { err },
-      "Gemini health check failed."
+  } catch (error) {
+    logger.warn(
+      {
+        err: error,
+        model,
+      },
+      "Gemini health check failed",
     );
 
     return false;
-
   }
-
 }
 
 /**
  * ============================================================
- * Report Finalizer
+ * FINALIZER
  * ============================================================
  */
 
 export function finalizeReport(
-  report: AiReportContent
+  report: AiReportContent,
 ): AiReportContent {
+  return {
+    ...report,
 
-  const cleaned = sanitizeReport(report);
+    summary:
+      report.summary.trim(),
 
-  const confidence = calculateConfidence(cleaned);
+    keyFindings:
+      report.keyFindings
+        .map((x) => x.trim())
+        .filter(Boolean)
+        .slice(0, 6),
 
-  logger.info(
-    {
-      confidence,
-      risk: cleaned.riskLevel,
-      exploitProbability: cleaned.exploitProbability
-    },
-    "AI report finalized successfully."
-  );
+    recommendations:
+      report.recommendations
+        .map((x) => x.trim())
+        .filter(Boolean)
+        .slice(0, 6),
 
-  return cleaned;
-
+    exploitProbability:
+      Math.max(
+        0,
+        Math.min(
+          1,
+          report.exploitProbability,
+        ),
+      ),
+  };
 }
 
 /**
  * ============================================================
- * Default Export
+ * DEFAULT EXPORT
  * ============================================================
  */
 
 export default {
-
   generateAiReport,
-
   checkGeminiHealth,
-
-  finalizeReport
-
+  finalizeReport,
 };

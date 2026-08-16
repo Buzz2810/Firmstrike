@@ -70,6 +70,11 @@ type RiskFactors = {
 function computeRiskLevel(
   factors: RiskFactors,
 ): "critical" | "high" | "medium" | "low" {
+  /*
+   * Any confirmed malware, critical secret,
+   * critical vulnerability, or critical CVE
+   * immediately makes the firmware critical.
+   */
   if (
     factors.malwareCount > 0 ||
     factors.criticalSecretsCount > 0 ||
@@ -98,10 +103,22 @@ function computeRiskLevel(
   return "low";
 }
 
+/*
+ * ============================================================
+ * Main Scan Pipeline
+ * ============================================================
+ */
+
 export async function runScanPipeline(
   firmwareId: number,
   scanId: number,
 ): Promise<void> {
+  /*
+   * ==========================================================
+   * LOAD FIRMWARE
+   * ==========================================================
+   */
+
   const [fw] = await db
     .select()
     .from(firmwareTable)
@@ -123,13 +140,23 @@ export async function runScanPipeline(
       })
       .where(eq(firmwareTable.id, firmwareId));
 
+    logger.error(
+      {
+        firmwareId,
+        scanId,
+      },
+      "Firmware file path not found",
+    );
+
     return;
   }
 
   try {
-    // ==========================================
-    // 1. START
-    // ==========================================
+    /*
+     * ========================================================
+     * 1. START
+     * ========================================================
+     */
 
     await db
       .update(scanResultsTable)
@@ -146,9 +173,11 @@ export async function runScanPipeline(
       })
       .where(eq(firmwareTable.id, firmwareId));
 
-    // ==========================================
-    // 2. PYTHON FIRMWARE SCANNER
-    // ==========================================
+    /*
+     * ========================================================
+     * 2. PYTHON FIRMWARE SCANNER
+     * ========================================================
+     */
 
     const extractPath =
       fw.extractPath ??
@@ -178,18 +207,33 @@ export async function runScanPipeline(
       extractPath,
     });
 
-    // ==========================================
-    // 4. DETECTED METADATA
-    // ==========================================
+    /*
+     * ========================================================
+     * 3. NORMALIZE PYTHON SCANNER RESULT
+     * ========================================================
+     */
 
     const architecture =
-      extraction.architecture || "UNKNOWN";
+      extraction.architecture ||
+      "UNKNOWN";
 
     const vendor =
-      extraction.vendor ?? null;
+      extraction.vendor ??
+      null;
 
     const version =
-      extraction.version ?? null;
+      extraction.version ??
+      null;
+
+    const extractedFiles =
+      Array.isArray(extraction.files)
+        ? extraction.files
+        : [];
+
+    const components =
+      Array.isArray(extraction.components)
+        ? extraction.components
+        : [];
 
     console.log("");
     console.log("========================================");
@@ -209,11 +253,11 @@ export async function runScanPipeline(
     );
     console.log(
       "Components   :",
-      extraction.components.length,
+      components.length,
     );
     console.log(
       "Files        :",
-      extraction.files.length,
+      extractedFiles.length,
     );
     console.log("========================================");
     console.log("");
@@ -221,16 +265,21 @@ export async function runScanPipeline(
     logger.info(
       {
         firmwareId,
+        scanId,
         architecture,
         vendor,
         version,
+        componentCount: components.length,
+        fileCount: extractedFiles.length,
       },
       "Firmware metadata detected by Python scanner",
     );
 
-    // ==========================================
-    // 5. SAVE METADATA
-    // ==========================================
+    /*
+     * ========================================================
+     * 4. SAVE FIRMWARE METADATA
+     * ========================================================
+     */
 
     await db
       .update(firmwareTable)
@@ -249,105 +298,122 @@ export async function runScanPipeline(
       })
       .where(eq(scanResultsTable.id, scanId));
 
-    // ==========================================
-    // 6. SAVE EXTRACTED FILES
-    // ==========================================
+    /*
+     * ========================================================
+     * 5. SAVE EXTRACTED FILES
+     * ========================================================
+     */
 
-    if (extraction.files.length > 0) {
-      await db.insert(extractedFilesTable).values(
-        extraction.files.map((file) => ({
-          scanId,
-          firmwareId,
-          path: file.path,
-          type: file.type,
-          size: file.size,
-          permissions: file.permissions,
-          isSuspicious: file.isSuspicious,
-        })),
-      );
+    if (extractedFiles.length > 0) {
+      await db
+        .insert(extractedFilesTable)
+        .values(
+          extractedFiles.map((file) => ({
+            scanId,
+            firmwareId,
+            path: file.path,
+            type: file.type,
+            size: file.size,
+            permissions: file.permissions,
+            isSuspicious: file.isSuspicious,
+          })),
+        );
     }
 
     console.log("");
     console.log("========== EXTRACTION RESULTS ==========");
     console.log(
       "Extract path:",
-      extraction.extraction?.path ?? extractPath,
+      extraction.extraction?.path ??
+        extractPath,
     );
     console.log(
       "Files extracted:",
-      extraction.files.length,
+      extractedFiles.length,
     );
     console.log(
       "Extraction count:",
-      extraction.extraction?.filesExtracted ?? 0,
+      extraction.extraction?.filesExtracted ??
+        0,
     );
     console.log(
       "Binwalk available:",
-      extraction.extraction?.binwalk?.available ?? false,
+      extraction.extraction?.binwalk?.available ??
+        false,
     );
     console.log(
       "Binwalk success:",
-      extraction.extraction?.binwalk?.success ?? false,
+      extraction.extraction?.binwalk?.success ??
+        false,
     );
     console.log("========================================");
     console.log("");
 
-    // ==========================================
-    // 7. STATIC ANALYSIS
-    // ==========================================
+    /*
+     * ========================================================
+     * 6. STATIC ANALYSIS
+     * ========================================================
+     */
 
     const staticAnalysis =
       await analyzeStaticFiles(
         extractPath,
-        extraction.files.map(
+        extractedFiles.map(
           (file) => file.path,
         ),
       );
 
     /*
-     * Python scanner already performs:
-     * - secret detection
-     * - dangerous function detection
-     *
-     * Existing TypeScript static analyzer provides
-     * additional findings.
+     * Python scanner findings
      */
 
     const pythonSecrets =
-      extraction.staticAnalysis?.secrets ?? [];
+      extraction.staticAnalysis?.secrets ??
+      [];
 
     const pythonDangerous =
-      extraction.staticAnalysis?.dangerous ?? [];
+      extraction.staticAnalysis?.dangerous ??
+      [];
 
     const pythonVulnerabilities =
-      extraction.staticAnalysis?.vulnerabilities ?? [];
+      extraction.staticAnalysis?.vulnerabilities ??
+      [];
 
-    const combinedSecrets = dedupeByKey(
-      [
-        ...pythonSecrets,
-        ...staticAnalysis.secrets,
-      ],
-      (s: any) =>
-        `${s.type}:${s.file ?? s.affectedFile ?? ""}:${s.line ?? 0}:${s.value ?? ""}`,
-    );
+    /*
+     * ========================================================
+     * 7. COMBINE + DEDUPLICATE FINDINGS
+     * ========================================================
+     */
 
-    const combinedDangerous = dedupeByKey(
-      [
-        ...pythonDangerous,
-        ...staticAnalysis.dangerous,
-      ],
-      (d: any) =>
-        `${d.name}:${d.file ?? d.affectedFile ?? ""}:${d.line ?? 0}`,
-    );
+    const combinedSecrets =
+      dedupeByKey(
+        [
+          ...pythonSecrets,
+          ...staticAnalysis.secrets,
+        ],
+        (s: any) =>
+          `${s.type}:${s.file ?? s.affectedFile ?? ""}:${s.line ?? 0}:${s.value ?? ""}`,
+      );
 
-    const combinedVulnerabilities = dedupeByKey(
-      [
-        ...pythonVulnerabilities,
-        ...staticAnalysis.vulnerabilities,
-      ],
-      (v: any) =>
-        `${v.type}:${v.file ?? v.affectedFile ?? ""}:${v.line ?? 0}:${v.description ?? ""}`,
-    );
+    const combinedDangerous =
+      dedupeByKey(
+        [
+          ...pythonDangerous,
+          ...staticAnalysis.dangerous,
+        ],
+        (d: any) =>
+          `${d.name}:${d.file ?? d.affectedFile ?? ""}:${d.line ?? 0}`,
+      );
+
+    const combinedVulnerabilities =
+      dedupeByKey(
+        [
+          ...pythonVulnerabilities,
+          ...staticAnalysis.vulnerabilities,
+        ],
+        (v: any) =>
+          `${v.type}:${v.file ?? v.affectedFile ?? ""}:${v.line ?? 0}:${v.description ?? ""}`,
+      );
 
     console.log("");
     console.log("========== STATIC ANALYSIS ==========");
@@ -397,156 +463,231 @@ export async function runScanPipeline(
       })
       .where(eq(scanResultsTable.id, scanId));
 
-    // ==========================================
-    // 8. HARD-CODED SECRETS
-    // ==========================================
+    /*
+     * ========================================================
+     * 8. HARD-CODED SECRETS
+     * ========================================================
+     */
 
     if (combinedSecrets.length > 0) {
-      await db.insert(hardcodedSecretsTable).values(
-        combinedSecrets.map((secret: any) => ({
-          scanId,
-          firmwareId,
-          type: secret.type || "Hardcoded Secret",
-          value: secret.value || secret.type || "secret_detected",
-          file:
-            secret.file ??
-            secret.affectedFile ??
-            "firmware.bin",
-          line:
-            typeof secret.line === "number" ? secret.line : 1,
-          severity:
-            secret.severity ?? "high",
-        })),
-      );
+      await db
+        .insert(hardcodedSecretsTable)
+        .values(
+          combinedSecrets.map(
+            (secret: any) => ({
+              scanId,
+              firmwareId,
+
+              type:
+                secret.type ??
+                "Hardcoded Secret",
+
+              value:
+                secret.value ??
+                secret.type ??
+                "secret_detected",
+
+              file:
+                secret.file ??
+                secret.affectedFile ??
+                "firmware.bin",
+
+              line:
+                typeof secret.line === "number"
+                  ? secret.line
+                  : 1,
+
+              severity:
+                secret.severity ??
+                "high",
+            }),
+          ),
+        );
     }
-
-    // ==========================================
-    // 9. DANGEROUS FUNCTIONS
-    // ==========================================
-
-    if (combinedDangerous.length > 0) {
-      await db.insert(dangerousFunctionsTable).values(
-        combinedDangerous.map((dangerous: any) => ({
-          scanId,
-          firmwareId,
-          name: dangerous.name || "dangerous_function",
-          file:
-            dangerous.file ??
-            dangerous.affectedFile ??
-            "firmware.bin",
-          line:
-            typeof dangerous.line === "number" ? dangerous.line : 1,
-          risk:
-            dangerous.risk ??
-            dangerous.severity ??
-            "high",
-          description:
-            dangerous.description ??
-            `Potentially dangerous function ${dangerous.name} detected.`,
-        })),
-      );
-    }
-
-    // ==========================================
-    // 10. VULNERABILITIES
-    // ==========================================
-
-    if (combinedVulnerabilities.length > 0) {
-      await db.insert(vulnerabilitiesTable).values(
-        combinedVulnerabilities.map(
-          (vulnerability: any) => ({
-            scanId,
-            firmwareId,
-
-            type:
-              vulnerability.type ??
-              "Static Analysis",
-
-            severity:
-              vulnerability.severity ??
-              "medium",
-
-            description:
-              vulnerability.description ??
-              "Potential vulnerability detected.",
-
-            affectedFile:
-              vulnerability.affectedFile ??
-              vulnerability.file ??
-              "firmware.bin",
-
-            recommendation:
-              vulnerability.recommendation ??
-              "Review and remediate this vulnerability.",
-          }),
-        ),
-      );
-    }
-
-    // ==========================================
-    // 11. CVE MATCHING
-    // ==========================================
 
     /*
-     * extraction.components contains structured objects:
-     *
-     * {
-     *   name,
-     *   version,
-     *   type,
-     *   path,
-     *   source
-     * }
-     *
-     * matchCvesForComponents currently expects string[].
-     * Convert the structured components to searchable strings.
+     * ========================================================
+     * 9. DANGEROUS FUNCTIONS
+     * ========================================================
+     */
+
+    if (combinedDangerous.length > 0) {
+      await db
+        .insert(dangerousFunctionsTable)
+        .values(
+          combinedDangerous.map(
+            (dangerous: any) => ({
+              scanId,
+              firmwareId,
+
+              name:
+                dangerous.name ??
+                "dangerous_function",
+
+              file:
+                dangerous.file ??
+                dangerous.affectedFile ??
+                "firmware.bin",
+
+              line:
+                typeof dangerous.line === "number"
+                  ? dangerous.line
+                  : 1,
+
+              risk:
+                dangerous.risk ??
+                dangerous.severity ??
+                "high",
+
+              description:
+                dangerous.description ??
+                `Potentially dangerous function ${dangerous.name ?? "unknown"} detected.`,
+            }),
+          ),
+        );
+    }
+
+    /*
+     * ========================================================
+     * 10. VULNERABILITIES
+     * ========================================================
+     */
+
+    if (combinedVulnerabilities.length > 0) {
+      await db
+        .insert(vulnerabilitiesTable)
+        .values(
+          combinedVulnerabilities.map(
+            (vulnerability: any) => ({
+              scanId,
+              firmwareId,
+
+              type:
+                vulnerability.type ??
+                "Static Analysis",
+
+              severity:
+                vulnerability.severity ??
+                "medium",
+
+              description:
+                vulnerability.description ??
+                "Potential vulnerability detected.",
+
+              affectedFile:
+                vulnerability.affectedFile ??
+                vulnerability.file ??
+                "firmware.bin",
+
+              recommendation:
+                vulnerability.recommendation ??
+                "Review and remediate this vulnerability.",
+            }),
+          ),
+        );
+    }
+
+    /*
+     * ========================================================
+     * 11. CVE MATCHING
+     * ========================================================
      */
 
     const cveComponents =
-      extraction.components.map(
-        (component) =>
-          `${component.name} ${component.version}`,
-      );
+      components
+        .filter(
+          (component: any) =>
+            component?.name,
+        )
+        .map(
+          (component: any) =>
+            `${component.name} ${component.version ?? ""}`.trim(),
+        );
+
+    /*
+     * If the scanner did not detect components,
+     * use controlled fallback component names.
+     */
 
     if (cveComponents.length === 0) {
       if (vendor) {
-        cveComponents.push(`${vendor} firmware`, "openssl 1.0.2", "busybox 1.31", "uhttpd");
+        cveComponents.push(
+          `${vendor} firmware`,
+          "openssl 1.0.2",
+          "busybox 1.31",
+          "uhttpd",
+        );
       } else {
-        cveComponents.push("openssl 1.0.2", "busybox 1.31", "dropbear");
+        cveComponents.push(
+          "openssl 1.0.2",
+          "busybox 1.31",
+          "dropbear",
+        );
       }
     }
 
-    const rawCveMatches =
-      await matchCvesForComponents(
-        cveComponents,
-      );
+    let rawCveMatches: any[] = [];
 
-    const cveMatches = dedupeByKey(rawCveMatches, (c) => c.cveId);
+    try {
+      rawCveMatches =
+        await matchCvesForComponents(
+          cveComponents,
+        );
+    } catch (error) {
+      logger.warn(
+        {
+          err: error,
+          firmwareId,
+          scanId,
+        },
+        "CVE matching failed; continuing scan",
+      );
+    }
+
+    const cveMatches =
+      dedupeByKey(
+        rawCveMatches,
+        (c) => c.cveId,
+      );
 
     if (cveMatches.length > 0) {
-      await db.insert(cveMatchesTable).values(
-        cveMatches.map((cve) => ({
+      await db
+        .insert(cveMatchesTable)
+        .values(
+          cveMatches.map((cve) => ({
+            scanId,
+            firmwareId,
+            ...cve,
+          })),
+        );
+
+      await db
+        .insert(activityTable)
+        .values({
+          type: "cve_matched",
+
+          message:
+            `Identified ${cveMatches.length} CVE vulnerabilities in ${fw.name}`,
+
+          severity:
+            cveMatches.some(
+              (c) =>
+                c.severity === "critical",
+            )
+              ? "critical"
+              : "warning",
+
           scanId,
           firmwareId,
-          ...cve,
-        })),
-      );
-
-      await db.insert(activityTable).values({
-        type: "cve_matched",
-        message: `Identified ${cveMatches.length} CVE vulnerabilities in ${fw.name}`,
-        severity: cveMatches.some((c) => c.severity === "critical") ? "critical" : "warning",
-        scanId,
-        firmwareId,
-        firmwareName: fw.name,
-      });
+          firmwareName: fw.name,
+        });
     }
 
     console.log("");
     console.log("========== CVE ANALYSIS ==========");
     console.log(
       "Components:",
-      extraction.components.length,
+      components.length,
     );
     console.log(
       "CVE matches:",
@@ -562,18 +703,22 @@ export async function runScanPipeline(
       })
       .where(eq(scanResultsTable.id, scanId));
 
-    // ==========================================
-    // 12. MALWARE ANALYSIS
-    // ==========================================
+    /*
+     * ========================================================
+     * 12. MALWARE ANALYSIS
+     * ========================================================
+     */
 
     let malwareResults =
-      extraction.malware ?? [];
+      Array.isArray(extraction.malware)
+        ? extraction.malware
+        : [];
 
     try {
       const typescriptMalware =
         await scanExtractedBinaries(
           extractPath,
-          extraction.files,
+          extractedFiles,
         );
 
       malwareResults = [
@@ -585,52 +730,65 @@ export async function runScanPipeline(
         {
           err: error,
           firmwareId,
+          scanId,
         },
         "TypeScript malware analyzer failed; continuing with Python results",
       );
     }
 
-    const dedupedMalwareResults = dedupeByKey(
-      malwareResults,
-      (m: any) => m.sha256 || m.fileName || "",
-    );
-
-    if (dedupedMalwareResults.length > 0) {
-      await db.insert(malwareHashesTable).values(
-        dedupedMalwareResults.map(
-          (malware: any) => ({
-            scanId,
-            firmwareId,
-
-            sha256:
-              malware.sha256,
-
-            threatScore:
-              malware.threatScore ?? 0,
-
-            virusTotalResult:
-              malware.virusTotalResult ??
-              "unknown",
-
-            isMalicious:
-              malware.isMalicious ?? false,
-
-            detectionCount:
-              malware.detectionCount ?? 0,
-
-            totalEngines:
-              malware.totalEngines ?? 0,
-
-            fileName:
-              malware.fileName ?? "unknown",
-          }),
-        ),
+    const dedupedMalwareResults =
+      dedupeByKey(
+        malwareResults,
+        (m: any) =>
+          m.sha256 ||
+          m.fileName ||
+          "",
       );
+
+    if (
+      dedupedMalwareResults.length > 0
+    ) {
+      await db
+        .insert(malwareHashesTable)
+        .values(
+          dedupedMalwareResults.map(
+            (malware: any) => ({
+              scanId,
+              firmwareId,
+
+              sha256:
+                malware.sha256,
+
+              threatScore:
+                malware.threatScore ??
+                0,
+
+              virusTotalResult:
+                malware.virusTotalResult ??
+                "unknown",
+
+              isMalicious:
+                malware.isMalicious ??
+                false,
+
+              detectionCount:
+                malware.detectionCount ??
+                0,
+
+              totalEngines:
+                malware.totalEngines ??
+                0,
+
+              fileName:
+                malware.fileName ??
+                "unknown",
+            }),
+          ),
+        );
     }
 
     /*
-     * Count as malicious if explicitly flagged OR
-     * threat score is >= 70.
+     * Explicit malware OR threat score >= 70.
      */
 
     const malwareCount =
@@ -653,44 +811,52 @@ export async function runScanPipeline(
     console.log("======================================");
     console.log("");
 
-    // ==========================================
-    // 13. EMULATION
-    // ==========================================
+    /*
+     * ========================================================
+     * 13. EMULATION
+     * ========================================================
+     */
 
     let emulation: any = null;
     let emulationFailed = false;
 
     try {
-      emulation = await runEmulation(
-        fw.filePath,
-        extractPath,
-        architecture,
-      );
+      emulation =
+        await runEmulation(
+          fw.filePath,
+          extractPath,
+          architecture,
+        );
 
       if (emulation) {
-        await db.insert(emulationLogsTable).values({
-          scanId,
-          firmwareId,
+        await db
+          .insert(emulationLogsTable)
+          .values({
+            scanId,
+            firmwareId,
 
-          status: "running",
+            status: "running",
 
-          architecture:
-            emulation.architecture ??
-            architecture,
+            architecture:
+              emulation.architecture ??
+              architecture,
 
-          runningServices:
-            JSON.stringify(
-              emulation.runningServices ?? [],
-            ),
+            runningServices:
+              JSON.stringify(
+                emulation.runningServices ??
+                  [],
+              ),
 
-          openPorts:
-            JSON.stringify(
-              emulation.openPorts ?? [],
-            ),
+            openPorts:
+              JSON.stringify(
+                emulation.openPorts ??
+                  [],
+              ),
 
-          runtimeLogs:
-            emulation.runtimeLogs ?? "",
-        });
+            runtimeLogs:
+              emulation.runtimeLogs ??
+              "",
+          });
       }
     } catch (error) {
       emulationFailed = true;
@@ -699,6 +865,7 @@ export async function runScanPipeline(
         {
           err: error,
           firmwareId,
+          scanId,
         },
         "Emulation failed; continuing scan",
       );
@@ -711,9 +878,11 @@ export async function runScanPipeline(
       })
       .where(eq(scanResultsTable.id, scanId));
 
-    // ==========================================
-    // 14. SBOM
-    // ==========================================
+    /*
+     * ========================================================
+     * 14. SBOM
+     * ========================================================
+     */
 
     let sbomFailed = false;
 
@@ -730,110 +899,139 @@ export async function runScanPipeline(
         {
           err: error,
           firmwareId,
+          scanId,
         },
         "SBOM generation failed; continuing scan",
       );
     }
 
-    // ==========================================
-    // 15. AI REPORT
-    // ==========================================
+    /*
+     * ========================================================
+     * 15. AI REPORT
+     * ========================================================
+     */
 
-    let aiReport: any = null;
+    let aiReport: Awaited<
+      ReturnType<typeof generateAiReport>
+    > | null = null;
+
     let aiReportFailed = false;
 
     try {
-      aiReport = await generateAiReport({
-        firmwareName: fw.name,
+      /*
+       * Convert all scanner data into the exact
+       * ScanContext format expected by Gemini.
+       */
 
-        architecture,
+      aiReport =
+        await generateAiReport({
+          firmwareName: fw.name,
 
-        vulnerabilities:
-          combinedVulnerabilities.map(
-            (vulnerability: any) => ({
-              type:
-                vulnerability.type ??
-                "Static Analysis",
+          architecture,
 
-              severity:
-                vulnerability.severity ??
-                "medium",
+          vulnerabilities:
+            combinedVulnerabilities.map(
+              (vulnerability: any) => ({
+                type:
+                  vulnerability.type ??
+                  "Static Analysis",
 
-              description:
-                vulnerability.description ??
-                "",
+                severity:
+                  vulnerability.severity ??
+                  "medium",
 
-              file:
-                vulnerability.affectedFile ??
-                vulnerability.file ??
-                "",
-            }),
-          ),
+                description:
+                  vulnerability.description ??
+                  "",
 
-        secrets:
-          combinedSecrets.map(
-            (secret: any) => ({
-              type:
-                secret.type ??
-                "Secret",
+                file:
+                  vulnerability.affectedFile ??
+                  vulnerability.file ??
+                  "",
+              }),
+            ),
 
-              file:
-                secret.file ??
-                "",
+          secrets:
+            combinedSecrets.map(
+              (secret: any) => ({
+                type:
+                  secret.type ??
+                  "Secret",
 
-              severity:
-                secret.severity ??
-                "high",
-            }),
-          ),
+                file:
+                  secret.file ??
+                  secret.affectedFile ??
+                  "",
 
-        dangerousFunctions:
-          combinedDangerous.map(
-            (dangerous: any) => ({
-              name:
-                dangerous.name ??
-                "",
+                severity:
+                  secret.severity ??
+                  "high",
+              }),
+            ),
 
-              file:
-                dangerous.file ??
-                "",
+          dangerousFunctions:
+            combinedDangerous.map(
+              (dangerous: any) => ({
+                name:
+                  dangerous.name ??
+                  "",
 
-              risk:
-                dangerous.risk ??
-                "high",
-            }),
-          ),
+                file:
+                  dangerous.file ??
+                  dangerous.affectedFile ??
+                  "",
 
-        cveIds:
-          cveMatches.map(
-            (cve) => cve.cveId,
-          ),
+                risk:
+                  dangerous.risk ??
+                  dangerous.severity ??
+                  "high",
+              }),
+            ),
 
-        malwareFindings:
-          malwareResults.map(
-            (malware: any) => ({
-              fileName:
-                malware.fileName,
+          cveIds:
+            cveMatches
+              .map(
+                (cve) => cve.cveId,
+              )
+              .filter(Boolean),
 
-              threatScore:
-                malware.threatScore,
+          malwareFindings:
+            dedupedMalwareResults.map(
+              (malware: any) => ({
+                fileName:
+                  malware.fileName ??
+                  "unknown",
 
-              result:
-                malware.virusTotalResult,
-            }),
-          ),
+                threatScore:
+                  Number(
+                    malware.threatScore ??
+                      0,
+                  ),
 
-        /*
-         * FIX:
-         * Gemini expects string[] while the Python
-         * scanner returns structured component objects.
-         */
-        components:
-          extraction.components.map(
-            (component) =>
-              `${component.name} ${component.version} (${component.type})`,
-          ),
-      });
+                result:
+                  malware.virusTotalResult ??
+                  "unknown",
+              }),
+            ),
+
+          /*
+           * Gemini expects string[].
+           */
+
+          components:
+            components.map(
+              (component: any) =>
+                `${component.name ?? "Unknown"} ${component.version ?? ""} (${component.type ?? "component"})`.trim(),
+            ),
+        });
+
+      /*
+       * generateAiReport() already contains its own
+       * Gemini fallback logic.
+       *
+       * Therefore an AI report should normally exist
+       * even when Gemini is unavailable.
+       */
 
       if (aiReport) {
         await db
@@ -850,22 +1048,27 @@ export async function runScanPipeline(
 
             keyFindings:
               JSON.stringify(
-                aiReport.keyFindings ?? [],
+                aiReport.keyFindings ??
+                  [],
               ),
 
             recommendations:
               JSON.stringify(
-                aiReport.recommendations ?? [],
+                aiReport.recommendations ??
+                  [],
               ),
 
             exploitProbability:
-              aiReport.exploitProbability ?? 0,
+              aiReport.exploitProbability ??
+              0,
           })
           .onConflictDoUpdate({
             target:
               aiReportsTable.scanId,
 
             set: {
+              firmwareId,
+
               summary:
                 aiReport.summary,
 
@@ -874,67 +1077,105 @@ export async function runScanPipeline(
 
               keyFindings:
                 JSON.stringify(
-                  aiReport.keyFindings ?? [],
+                  aiReport.keyFindings ??
+                    [],
                 ),
 
               recommendations:
                 JSON.stringify(
-                  aiReport.recommendations ?? [],
+                  aiReport.recommendations ??
+                    [],
                 ),
 
               exploitProbability:
-                aiReport.exploitProbability ?? 0,
+                aiReport.exploitProbability ??
+                0,
 
               generatedAt:
                 new Date(),
             },
           });
+
+        logger.info(
+          {
+            firmwareId,
+            scanId,
+            riskLevel:
+              aiReport.riskLevel,
+            exploitProbability:
+              aiReport.exploitProbability,
+          },
+          "AI report saved successfully",
+        );
       }
     } catch (error) {
+      /*
+       * IMPORTANT:
+       *
+       * AI failure must NOT fail the entire firmware scan.
+       */
+
       aiReportFailed = true;
 
       logger.warn(
         {
           err: error,
           firmwareId,
+          scanId,
         },
         "AI report generation failed; continuing scan",
       );
     }
 
-    // ==========================================
-    // 16. CALCULATE RISK
-    // ==========================================
+    /*
+     * ========================================================
+     * 16. CALCULATE FINAL RISK
+     * ========================================================
+     */
 
     const criticalVulnCount =
       combinedVulnerabilities.filter(
         (v: any) =>
-          v.severity === "critical",
+          String(
+            v.severity ?? "",
+          ).toLowerCase() ===
+          "critical",
       ).length;
 
     const highVulnCount =
       combinedVulnerabilities.filter(
         (v: any) =>
-          v.severity === "high",
+          String(
+            v.severity ?? "",
+          ).toLowerCase() ===
+          "high",
       ).length;
 
     const criticalSecretsCount =
       combinedSecrets.filter(
         (s: any) =>
-          (s.severity ?? "high") ===
+          String(
+            s.severity ?? "high",
+          ).toLowerCase() ===
           "critical",
       ).length;
 
     const cveCriticalCount =
       cveMatches.filter(
         (c) =>
-          c.severity === "critical",
+          String(
+            c.severity ?? "",
+          ).toLowerCase() ===
+          "critical",
       ).length;
 
     const cveHighCount =
       cveMatches.filter(
         (c) =>
-          c.severity === "high",
+          String(
+            c.severity ?? "",
+          ).toLowerCase() ===
+          "high",
       ).length;
 
     const riskLevel =
@@ -961,9 +1202,11 @@ export async function runScanPipeline(
         malwareCount,
       });
 
-    // ==========================================
-    // 17. TOTAL FINDINGS
-    // ==========================================
+    /*
+     * ========================================================
+     * 17. TOTAL FINDINGS
+     * ========================================================
+     */
 
     const totalFindings =
       combinedVulnerabilities.length +
@@ -972,9 +1215,11 @@ export async function runScanPipeline(
       cveMatches.length +
       malwareCount;
 
-    // ==========================================
-    // 18. COMPLETE SCAN
-    // ==========================================
+    /*
+     * ========================================================
+     * 18. COMPLETE SCAN
+     * ========================================================
+     */
 
     await db
       .update(scanResultsTable)
@@ -987,7 +1232,7 @@ export async function runScanPipeline(
           new Date(),
 
         totalFiles:
-          extraction.files.length,
+          extractedFiles.length,
 
         vulnerabilitiesFound:
           totalFindings,
@@ -996,9 +1241,11 @@ export async function runScanPipeline(
       })
       .where(eq(scanResultsTable.id, scanId));
 
-    // ==========================================
-    // 19. MARK FIRMWARE COMPLETED
-    // ==========================================
+    /*
+     * ========================================================
+     * 19. MARK FIRMWARE COMPLETED
+     * ========================================================
+     */
 
     await db
       .update(firmwareTable)
@@ -1015,118 +1262,172 @@ export async function runScanPipeline(
       })
       .where(eq(firmwareTable.id, firmwareId));
 
-    // ==========================================
-    // 20. ACTIVITY LOG
-    // ==========================================
+    /*
+     * ========================================================
+     * 20. ACTIVITY LOG
+     * ========================================================
+     */
 
-    await db.insert(activityTable).values({
-      type: "scan_completed",
-
-      message:
-        `Scan completed: ${combinedVulnerabilities.length} vulnerabilities, ` +
-        `${combinedSecrets.length} secrets, ` +
-        `${combinedDangerous.length} dangerous functions, ` +
-        `${cveMatches.length} CVEs, ` +
-        `risk ${riskLevel.toUpperCase()}` +
-        (aiReportFailed
-          ? " (AI report unavailable)"
-          : "") +
-        (emulationFailed
-          ? " (emulation failed)"
-          : "") +
-        (sbomFailed
-          ? " (SBOM failed)"
-          : ""),
-
-      severity:
-        riskLevel === "critical"
-          ? "critical"
-          : riskLevel === "high"
-            ? "high"
-            : "info",
-
-      firmwareId,
-
-      firmwareName:
-        fw.name,
-    });
-
-    // ==========================================
-    // 21. MALWARE ACTIVITY
-    // ==========================================
-
-    if (malwareCount > 0) {
-      await db.insert(activityTable).values({
-        type: "malware_detected",
+    await db
+      .insert(activityTable)
+      .values({
+        type: "scan_completed",
 
         message:
-          `Malware indicators found in ${fw.name}`,
+          `Scan completed: ${combinedVulnerabilities.length} vulnerabilities, ` +
+          `${combinedSecrets.length} secrets, ` +
+          `${combinedDangerous.length} dangerous functions, ` +
+          `${cveMatches.length} CVEs, ` +
+          `${malwareCount} malware indicators, ` +
+          `risk ${riskLevel.toUpperCase()}` +
+          (aiReportFailed
+            ? " (AI report unavailable)"
+            : "") +
+          (emulationFailed
+            ? " (emulation failed)"
+            : "") +
+          (sbomFailed
+            ? " (SBOM failed)"
+            : ""),
 
         severity:
-          "critical",
+          riskLevel === "critical"
+            ? "critical"
+            : riskLevel === "high"
+              ? "high"
+              : "info",
 
         firmwareId,
 
         firmwareName:
           fw.name,
+
+        scanId,
       });
+
+    /*
+     * ========================================================
+     * 21. MALWARE ACTIVITY
+     * ========================================================
+     */
+
+    if (malwareCount > 0) {
+      await db
+        .insert(activityTable)
+        .values({
+          type: "malware_detected",
+
+          message:
+            `Malware indicators found in ${fw.name}`,
+
+          severity:
+            "critical",
+
+          firmwareId,
+
+          firmwareName:
+            fw.name,
+
+          scanId,
+        });
     }
 
-    // ==========================================
-    // FINAL LOG
-    // ==========================================
+    /*
+     * ========================================================
+     * FINAL LOG
+     * ========================================================
+     */
 
     console.log("");
     console.log("========================================");
     console.log("           SCAN COMPLETED");
     console.log("========================================");
+
     console.log(
       "Firmware       :",
       fw.name,
     );
+
+    console.log(
+      "Scan ID        :",
+      scanId,
+    );
+
+    console.log(
+      "Firmware ID    :",
+      firmwareId,
+    );
+
     console.log(
       "Architecture   :",
       architecture,
     );
+
     console.log(
       "Vendor         :",
       vendor ?? "UNKNOWN",
     );
+
     console.log(
       "Version        :",
       version ?? "UNKNOWN",
     );
+
     console.log(
       "Files          :",
-      extraction.files.length,
+      extractedFiles.length,
     );
+
     console.log(
       "Secrets        :",
       combinedSecrets.length,
     );
+
     console.log(
       "Dangerous fns  :",
       combinedDangerous.length,
     );
+
     console.log(
       "Vulnerabilities:",
       combinedVulnerabilities.length,
     );
+
     console.log(
       "CVEs           :",
       cveMatches.length,
     );
+
     console.log(
       "Malware        :",
       malwareCount,
     );
+
+    console.log(
+      "AI Report      :",
+      aiReport
+        ? "AVAILABLE"
+        : "UNAVAILABLE",
+    );
+
     console.log(
       "Risk           :",
       riskLevel.toUpperCase(),
     );
+
     console.log("========================================");
     console.log("");
   } catch (err) {
+    /*
+     * ========================================================
+     * GLOBAL PIPELINE FAILURE
+     * ========================================================
+     *
+     * Only failures in the actual scanning pipeline reach here.
+     * Individual optional services such as Gemini, SBOM,
+     * emulation and CVE matching are isolated above.
+     */
+
     logger.error(
       {
         err,
@@ -1136,19 +1437,49 @@ export async function runScanPipeline(
       "Firmware scan pipeline failed",
     );
 
-    await db
-      .update(scanResultsTable)
-      .set({
-        status: "failed",
-        progress: 100,
-      })
-      .where(eq(scanResultsTable.id, scanId));
+    try {
+      await db
+        .update(scanResultsTable)
+        .set({
+          status: "failed",
+          progress: 100,
+        })
+        .where(
+          eq(
+            scanResultsTable.id,
+            scanId,
+          ),
+        );
+    } catch (dbError) {
+      logger.error(
+        {
+          err: dbError,
+          scanId,
+        },
+        "Failed to update scan result to failed",
+      );
+    }
 
-    await db
-      .update(firmwareTable)
-      .set({
-        status: "failed",
-      })
-      .where(eq(firmwareTable.id, firmwareId));
+    try {
+      await db
+        .update(firmwareTable)
+        .set({
+          status: "failed",
+        })
+        .where(
+          eq(
+            firmwareTable.id,
+            firmwareId,
+          ),
+        );
+    } catch (dbError) {
+      logger.error(
+        {
+          err: dbError,
+          firmwareId,
+        },
+        "Failed to update firmware status to failed",
+      );
+    }
   }
 }
