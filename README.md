@@ -4,7 +4,7 @@
 
 ### AI-Powered IoT Firmware Security Analysis Platform
 
-*Upload. Scan. Detect. Emulate. Report.*
+*Upload. Scan. Detect. Report.*
 
 </div>
 
@@ -13,229 +13,226 @@
 ## 📖 Table of Contents
 
 - [About](#-about)
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
 - [Architecture](#-architecture)
+- [Prerequisites](#-prerequisites)
 - [Getting Started](#-getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
-  - [Running Locally](#running-locally)
+  - [1. Clone and install Node dependencies](#1-clone-and-install-node-dependencies)
+  - [2. Configure environment variables](#2-configure-environment-variables)
+  - [3. Set up PostgreSQL](#3-set-up-postgresql)
+  - [4. Set up the Python scanner](#4-set-up-the-python-scanner)
+  - [5. Run everything](#5-run-everything)
+- [Windows-Specific Notes](#-windows-specific-notes)
 - [Available Scripts](#-available-scripts)
-- [Application Pages](#-application-pages)
-- [API Overview](#-api-overview)
-- [Database Schema](#-database-schema)
-- [Theming](#-theming)
-- [Roadmap](#-roadmap)
+- [Troubleshooting](#-troubleshooting)
 - [Known Limitations](#-known-limitations)
-- [FAQ](#-faq)
 - [License](#-license)
-- [Maintainers](#-maintainers)
 
 ---
 
 ## 🧭 About
 
-**FirmStrike** (internally named **Viv Scanner**) is a full-stack cybersecurity platform built for security researchers, IoT manufacturers, and pentesters who need to analyze embedded and IoT firmware at scale.
+**FirmStrike** is a full-stack security platform for analyzing IoT/embedded firmware images. Upload a firmware file and it will:
 
-Instead of juggling a dozen separate command-line tools, FirmStrike gives you one dashboard to:
+1. Detect the firmware format and CPU architecture
+2. Extract the embedded filesystem (SquashFS, TRX, ZIP, TAR, GZIP, etc.)
+3. Statically scan every extracted file — including compiled binaries — for hardcoded secrets and dangerous function calls (`system()`, `popen()`, `strcpy()`, ...)
+4. Match detected components (BusyBox, Dropbear, OpenSSL, uhttpd, ...) against known CVEs
+5. Hash and heuristically/VirusTotal-check extracted binaries for malware indicators
+6. Generate an AI-written executive summary, a downloadable PDF report, and an SBOM (CycloneDX/SPDX)
 
-1. Upload a firmware image
-2. Extract and statically analyze its contents
-3. Cross-reference known vulnerabilities against CVE databases
-4. Scan for malware signatures and hardcoded secrets
-5. Emulate the firmware in a QEMU sandbox to observe real runtime behavior
-6. Generate a shareable, downloadable security report
-
-The goal is to compress what normally takes hours of manual firmware reverse engineering into a guided, repeatable workflow.
-
-> **Note:** This project is under active development. Some scan pipelines currently run against simulated/seeded data while the live analysis engines are being wired in — see [Known Limitations](#-known-limitations).
-
----
-
-## ✨ Features
-
-### 🔎 Firmware Intake & Extraction
-- Upload firmware images directly through the web UI
-- Automatic file extraction and content inventory
-- Per-scan telemetry: file counts, extraction progress, timestamps
-
-### 🛡️ Static & Binary Security Analysis
-- Detection of hardcoded secrets (API keys, credentials, tokens)
-- Flagging of dangerous/unsafe function usage
-- Automated severity scoring per finding
-
-### 🧬 CVE Intelligence
-- CVSS score breakdown for matched vulnerabilities
-- Direct links out to NVD (National Vulnerability Database)
-- Matched security advisories tied to detected components
-
-### 🦠 Malware Detection
-- Hash-based matching against known malware signatures (VirusTotal-style)
-- Visual threat-score meters for quick triage
-
-### 🖥️ QEMU Emulation
-- Boot firmware images inside an ARM emulator
-- Discover open network ports and running services at runtime
-- Useful for validating whether a static finding is actually exploitable
-
-### 📊 Dashboard & Reporting
-- Live threat metrics, vulnerability trend charts, and risk distribution
-- AI-assisted risk summaries and exploit-probability estimates
-- One-click downloadable PDF reports for stakeholders
-
-### 🔐 Accounts
-- Login/registration flow with session-based authentication
-
----
-
-## 🧰 Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Monorepo tooling | pnpm workspaces, Node.js 24, TypeScript 5.9 |
-| Frontend | React, Vite, Wouter (routing), Recharts (charts), Framer Motion (animation), Tailwind CSS v4, shadcn/ui |
-| Backend / API | Express 5 |
-| Database | PostgreSQL |
-| ORM | Drizzle ORM (+ `drizzle-zod`) |
-| Validation | Zod (`zod/v4`) |
-| API contract & codegen | OpenAPI spec, generated via Orval into typed React Query hooks |
-| Build tooling | esbuild (CJS bundle output) |
-| Formatting | Prettier |
+The scanning pipeline is a **Python service** (`python-scanner/`) that does the heavy lifting — extraction, static analysis, hashing — and a **Node.js/Express backend** (`backend/`) that orchestrates scans, stores results in PostgreSQL, and serves the API the **React frontend** (`frontend/`) talks to.
 
 ---
 
 ## 📂 Project Structure
 
 ```
-FirmStrike/
-├── artifacts/
-│   ├── viv-scanner/                 # React frontend (cyberpunk dark theme)
-│   │   └── src/
-│   │       ├── pages/
-│   │       │   ├── Dashboard.tsx
-│   │       │   ├── FirmwareLibrary.tsx
-│   │       │   ├── ScanDetails.tsx
-│   │       │   ├── SecurityAnalysis.tsx
-│   │       │   ├── CveIntelligence.tsx
-│   │       │   ├── MalwareDetection.tsx
-│   │       │   ├── QemuEmulation.tsx
-│   │       │   ├── ReportsAi.tsx
-│   │       │   ├── Login.tsx
-│   │       │   └── Register.tsx
-│   │       └── components/
-│   │           ├── Layout.tsx        # Sidebar + main content shell
-│   │           ├── theme-provider.tsx
-│   │           └── ui/               # shadcn/ui components
-│   │
-│   └── api-server/
-│       └── src/
-│           └── routes/
-│               ├── auth.ts
-│               ├── firmware.ts
-│               ├── scanner.ts
-│               ├── security.ts
-│               ├── cve.ts
-│               ├── malware.ts
-│               ├── qemu.ts
-│               ├── reports.ts
-│               └── dashboard.ts
+Firmstrike/
+├── backend/                    # Express API server
+│   └── src/
+│       ├── routes/             # security.ts, cve.ts, malware.ts, scanner.ts, dashboard.ts, ...
+│       └── services/           # python-scanner.ts, malware-analyzer.ts, gemini.ts, scan-pipeline.ts, ...
 │
-├── lib/
-│   ├── api-spec/
-│   │   └── openapi.yaml             # Source-of-truth OpenAPI contract
-│   ├── api-client-react/            # Generated React Query hooks + Zod schemas
-│   └── db/
-│       └── src/schema/              # Drizzle ORM schema (users, firmware, scans, security, index)
+├── frontend/                   # React + Vite SPA
+│   └── src/
 │
-├── scripts/                         # Workspace-level scripts
-├── attached_assets/                 # Static/reference assets
-├── .gitignore
-├── package.json
-├── pnpm-lock.yaml
+├── python-scanner/              # FastAPI service that does the actual firmware analysis
+│   ├── app.py                   # FastAPI entrypoint
+│   ├── scanner.py                # Extraction + static analysis logic (the core engine)
+│   ├── requirements.txt
+│   └── .venv/                    # Python virtual environment (created locally, not committed)
+│
+├── lib/                          # (if present) shared packages: api-spec, api-client-react, db
+├── package.json                  # pnpm workspace root
 ├── pnpm-workspace.yaml
-├── tsconfig.base.json
-├── tsconfig.json
-└── replit.md                        # Internal engineering notes
+└── README.md
 ```
 
 ---
 
 ## 🏗️ Architecture
 
-- **Contract-first API** — `lib/api-spec/openapi.yaml` is the single source of truth. Both the server-side validation schemas and the frontend's typed React Query hooks are generated from it via Orval, so the client and server never drift out of sync.
-- **Monorepo via pnpm workspaces** — the frontend (`viv-scanner`), backend (`api-server`), and shared packages (`api-spec`, `api-client-react`, `db`) live side by side and are typechecked/built together.
-- **Session-based auth** — implemented with `express-session` and a `SESSION_SECRET`, with the full login/registration flow scaffolded and ready to be wired up end-to-end.
-- **Routing convention** — all API routes are served under the `/api/` prefix; the frontend SPA is served at `/`.
-- **Cyberpunk dark theme** — built with Tailwind CSS v4 custom variants (`@custom-variant dark (&:is(.dark *))`), toggled by adding a `.dark` class to `<html>` via `theme-provider.tsx`.
+```
+┌──────────────────┐   HTTP /api/*   ┌───────────────────┐   HTTP :8010   ┌────────────────────┐
+│ frontend (React)  │ ──────────────▶ │ backend (Express)  │ ─────────────▶ │ python-scanner       │
+│ localhost:25439   │                  │ localhost:8080      │                 │ (FastAPI, uvicorn)   │
+└──────────────────┘                  └──────────┬─────────┘                 │ localhost:8010        │
+                                                    │                          └────────────────────┘
+                                                    ▼
+                                          ┌───────────────────┐
+                                          │ PostgreSQL           │
+                                          └───────────────────┘
+```
 
-```
-┌─────────────────────┐        OpenAPI spec        ┌─────────────────────┐
-│  lib/api-spec        │ ─────────────────────────▶ │  Orval codegen       │
-│  (openapi.yaml)       │                            │                      │
-└─────────────────────┘                            └──────────┬──────────┘
-                                                                │
-                                       ┌────────────────────────┴────────────────────────┐
-                                       ▼                                                  ▼
-                          ┌───────────────────────┐                         ┌───────────────────────┐
-                          │ lib/api-client-react   │                         │ api-server route        │
-                          │ (typed hooks + Zod)    │                         │ validation (Zod schemas)│
-                          └──────────┬────────────┘                         └──────────┬───────────┘
-                                     │                                                    │
-                                     ▼                                                    ▼
-                          ┌───────────────────────┐                         ┌───────────────────────┐
-                          │ viv-scanner frontend   │  ──── HTTP /api/* ────▶ │ Express 5 API server    │
-                          │ (React + Vite)         │                         │                          │
-                          └───────────────────────┘                         └──────────┬───────────┘
-                                                                                        ▼
-                                                                            ┌───────────────────────┐
-                                                                            │ PostgreSQL + Drizzle    │
-                                                                            └───────────────────────┘
-```
+The backend calls the Python scanner over HTTP (`PYTHON_SCANNER_URL`, default `http://127.0.0.1:8010`). If that service isn't reachable, it falls back to spawning `python3 scanner.py` directly as a subprocess — but **running the persistent FastAPI service is the supported path** and is what these instructions set up.
+
+---
+
+## ✅ Prerequisites
+
+- **Node.js 24+**
+- **pnpm** — this workspace is pnpm-only (`npm install` is actively blocked by a `preinstall` script)
+- **Python 3.10+**
+- A running **PostgreSQL** instance
+- (Optional but recommended) A **Gemini API key** for AI report generation, and a **VirusTotal API key** for real malware hash lookups — the app degrades gracefully without them (heuristic-only malware scoring, no AI summary)
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-- **Node.js 24+**
-- **pnpm** — this workspace is pnpm-only. The `preinstall` script actively blocks `npm`/`yarn` installs and will exit with an error telling you to use pnpm.
-- A running **PostgreSQL** instance
-
-### Installation
+### 1. Clone and install Node dependencies
 
 ```bash
-git clone https://github.com/Redkrossresearch/FirmStrike.git
-cd FirmStrike
+git clone <your-repo-url>
+cd Firmstrike
 pnpm install
 ```
 
-### Environment Variables
+### 2. Configure environment variables
 
-Create a `.env` file (or export these in your shell) before running the API server:
+Create `backend/.env`:
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `SESSION_SECRET` | ✅ | Secret used to sign session cookies |
+```env
+# API server
+PORT=8080
+DATABASE_URL=postgres://user:password@localhost:5432/firmstrike
+SESSION_SECRET=some-long-random-string
+NODE_ENV=development
 
-### Running Locally
+# AI report generation (optional — omit to disable AI summaries)
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=your-gemini-key
 
-Run the frontend and API server in separate terminals:
+# Malware hash lookups (optional — omit to fall back to local heuristics only)
+VIRUSTOTAL_API_KEY=your-virustotal-key
+
+# Python scanner service
+PYTHON_SCANNER_URL=http://127.0.0.1:8010
+```
+
+Create `frontend/.env`:
+
+```env
+VITE_PORT=25439
+BASE_PATH=/
+```
+
+### 3. Set up PostgreSQL
+
+Point `DATABASE_URL` at a running Postgres instance, then push the schema:
 
 ```bash
-# Terminal 1 — API server (http://localhost:8080)
-pnpm --filter @workspace/backend run dev
+pnpm --filter @workspace/db run push
+```
 
-# Terminal 2 — React frontend (http://localhost:25439)
+(If your workspace doesn't have a separate `db` package, check whichever package owns the Drizzle schema and run its migration/push script instead.)
+
+### 4. Set up the Python scanner
+
+This is the part most likely to trip people up, so follow it closely — every step here exists because of a real issue we hit getting this running.
+
+```bash
+cd python-scanner
+python -m venv .venv
+```
+
+Activate the venv:
+
+```bash
+# macOS / Linux
+source .venv/bin/activate
+
+# Windows (Git Bash)
+source .venv/Scripts/activate
+
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
+# Windows (cmd.exe)
+.venv\Scripts\activate.bat
+```
+
+Then install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+`requirements.txt` includes:
+- `fastapi`, `uvicorn`, `python-multipart` — the scanner's HTTP service
+- `binwalk3` — firmware signature detection & extraction (bundles a Rust binwalk v3 binary, including a Windows x64 build, so no separate CLI install is needed)
+- `PySquashfsImage` — pure-Python SquashFS extraction, used because binwalk's usual extractor (`sasquatch`) has no Windows build
+
+**If you're on Windows, also enable Developer Mode** — see [Windows-Specific Notes](#-windows-specific-notes) below. Without it, extraction will fail with a symlink permission error.
+
+### 5. Run everything
+
+You need **three** processes running simultaneously, each in its own terminal:
+
+```bash
+# Terminal 1 — Python scanner (http://localhost:8010)
+cd python-scanner
+source .venv/Scripts/activate   # or the activation command for your shell/OS
+python -m uvicorn app:app --host 127.0.0.1 --port 8010
+```
+
+```bash
+# Terminal 2 — Backend API (http://localhost:8080)
+pnpm --filter @workspace/backend run dev
+```
+
+```bash
+# Terminal 3 — Frontend (http://localhost:25439)
 pnpm --filter @workspace/frontend run dev
 ```
 
-Then open **http://localhost:25439** in your browser.
+Then open **http://localhost:25439** and upload a firmware image.
 
-Note: scans are tracked by a unique `scanId` (primary key in the `scan_results` table). API endpoints that return per-scan data use `scanId` in paths — e.g. `/api/scanner/results/{scanId}` and `/api/scanner/files/{scanId}`. You can still address the latest scan for a firmware by using the firmware id in the same path (the backend resolves a firmware id to its latest scan id transparently).
+---
+
+## 🪟 Windows-Specific Notes
+
+Firmware extraction unpacks real Linux filesystems, which use symlinks — and Windows blocks non-elevated processes from creating them by default. Without this step, extraction will fail with an error like:
+
+```
+Failed to create symlink ...: A required privilege is not held by the client. (os error 1314)
+```
+
+**Fix — enable Developer Mode (no admin/reboot required):**
+
+1. **Settings** → **Privacy & security** → **For developers** (older Windows 10: **Update & Security** → **For developers**)
+2. Turn on **Developer Mode**
+3. Close and reopen your terminal
+
+If your venv gets moved/copied between folders after creation (e.g. you renamed the project directory), **recreate it** rather than trying to reuse it — pip's internals hardcode absolute paths and break silently otherwise:
+
+```bash
+rm -rf .venv
+python -m venv .venv
+source .venv/Scripts/activate
+pip install -r requirements.txt
+```
 
 ---
 
@@ -243,133 +240,53 @@ Note: scans are tracked by a unique `scanId` (primary key in the `scan_results` 
 
 | Command | Description |
 |---|---|
-| `pnpm install` | Install all workspace dependencies |
+| `pnpm install` | Install all Node workspace dependencies |
 | `pnpm run typecheck` | Typecheck every package in the workspace |
 | `pnpm run build` | Typecheck, then build all packages |
-| `pnpm --filter @workspace/backend run dev` | Start the Express API server in dev mode |
-| `pnpm --filter @workspace/frontend run dev` | Start the React frontend in dev mode |
-| `pnpm --filter @workspace/api-spec run codegen` | Regenerate API hooks & Zod schemas from `openapi.yaml` |
-| `pnpm --filter @workspace/db run push` | Push Drizzle schema changes to the database (dev only) |
-
-> ⚠️ Do not run `pnpm add --no-frozen-lockfile` in this workspace — it can desync the lockfile across packages.
+| `pnpm --filter @workspace/backend run dev` | Build + start the Express API server |
+| `pnpm --filter @workspace/frontend run dev` | Start the Vite dev server |
+| `python -m uvicorn app:app --port 8010` (from `python-scanner/`, venv active) | Start the Python scanner service |
 
 ---
 
-## 🗺️ Application Pages
+## 🧯 Troubleshooting
 
-| Page | Purpose |
-|---|---|
-| **Dashboard** | Live threat metrics, vulnerability trends, risk distribution overview |
-| **Firmware Library** | Upload, browse, and manage firmware images |
-| **Scan Details** | Per-scan extraction telemetry and progress |
-| **Security Analysis** | Hardcoded secrets, dangerous functions, severity scores |
-| **CVE Intelligence** | CVSS breakdowns, NVD links, matched advisories |
-| **Malware Detection** | Hash-based threat matching and scoring |
-| **QEMU Emulation** | Boot firmware, inspect open ports and running services |
-| **Reports & AI** | Risk summaries, exploit probability, PDF export |
-| **Login / Register** | Session-based account access |
-
----
-
-## 🔌 API Overview
-
-All backend routes are namespaced under `/api/` and grouped by domain in `backend/src/routes/`:
-
-| Route file | Responsibility |
-|---|---|
-| `auth.ts` | Login, registration, session handling |
-| `firmware.ts` | Firmware upload and library management |
-| `scanner.ts` | Scan orchestration and progress tracking |
-| `security.ts` | Static/binary security analysis findings |
-| `cve.ts` | CVE matching and CVSS data |
-| `malware.ts` | Malware hash matching |
-| `qemu.ts` | QEMU emulation control and results |
-| `reports.ts` | Report generation (including AI summaries) |
-| `dashboard.ts` | Aggregated metrics for the dashboard view |
-
-The full contract lives in [`lib/api-spec/openapi.yaml`](./lib/api-spec/openapi.yaml). After changing it, regenerate the typed client with:
+**Scan completes but shows "No secrets detected" / "No dangerous functions detected" / only 1-2 files extracted**
+Check the backend terminal output for `Binwalk available: false`. This means the persistent scanner service on port 8010 isn't running (or isn't the one you think it is) — the backend silently fell back to a different Python environment. Find and stop whatever's using port 8010, then start `uvicorn` from the correct activated venv:
 
 ```bash
-pnpm --filter @workspace/api-spec run codegen
+# find what's using the port
+netstat -ano | findstr :8010        # Windows
+lsof -i :8010                        # macOS/Linux
+
+# stop it, then restart uvicorn from python-scanner/ with the venv active
 ```
 
----
+**`ModuleNotFoundError: No module named 'pip._internal.operations.build'`**
+Your venv was created in one location and the project folder was later moved/renamed. Delete and recreate `.venv` (see [Windows-Specific Notes](#-windows-specific-notes)).
 
-## 🗄️ Database Schema
+**`binwalk3 (python) found 0 signature(s)`, no errors, on a firmware you know isn't empty**
+Confirm `signature=True` and `matryoshka=False` are set in `try_binwalk()`'s call to `binwalk3.scan(...)` inside `scanner.py`. `matryoshka=True` can cause `binwalk3`'s JSON output parser to choke on multi-document output and silently return zero results.
 
-Schema is defined with Drizzle ORM in `lib/db/src/schema/`, covering:
+**Malware panel shows very few, repetitive-looking results**
+BusyBox is a "multi-call binary" — dozens of filenames (`ash`, `cat`, `chmod`, `cp`, ...) are hardlinks to the exact same file content. The malware scanner dedupes by SHA-256 before sampling files to check, specifically to avoid this — if you're still seeing this, make sure `backend/src/services/malware-analyzer.ts` has the dedup-by-hash logic and isn't just taking the first N files in filesystem order.
 
-- `users` — accounts and auth data
-- `firmware` — uploaded firmware image records
-- `scans` — scan jobs and their progress/status
-- `security` — findings from static/binary analysis
-- `index` — shared schema exports
-
-Seed data currently includes 4 firmware records (D-Link — critical, TP-Link — high, Netgear — scanning, Asus — pending), 12 vulnerabilities, 6 CVEs, 7 malware hashes, and 6 activity events — useful for local development and demos.
-
----
-
-## 🎨 Theming
-
-FirmStrike ships with a dark "cyberpunk" theme by default:
-
-- **Accent:** electric teal `#00e5cc`
-- **Background:** near-black `#0a0f14`
-- Implemented with Tailwind CSS v4 custom properties scoped to a `.dark` class, applied via `theme-provider.tsx`
-
-If you're extending the UI, keep in mind a few Recharts/shadcn quirks encountered in this codebase:
-
-- Recharts `<Cell>` must be imported and capitalized — a lowercase `<cell>` is invalid JSX
-- The `RadialBar` prop is `isClockWise`, not `clockWise`, in the current Recharts version
-- shadcn's `Progress` component doesn't accept `indicatorColor` — use a Tailwind arbitrary selector like `[&>div]:bg-...` instead
-- `useGetRunningServices` returns an `EmulationLog[]` array, not a single object — access it as `services?.[0]?.runningServices`
-
----
-
-## 🛣️ Roadmap
-
-- [ ] Replace simulated scan progression with real static/binary analysis pipelines
-- [ ] Wire up live firmware extraction (e.g. Binwalk-based) end to end
-- [ ] Connect CVE Intelligence to a live NVD/CVE feed
-- [ ] Real malware hash lookups against an external threat-intel source
-- [ ] Harden QEMU emulation sandboxing for untrusted firmware
-- [ ] Full end-to-end auth flow (password reset, email verification)
-- [ ] CI pipeline for typecheck/build/test on pull requests
-
-Have an idea or priority you'd like bumped up? Open an issue!
+**Security score always shows `0`**
+Real firmware routinely has 50-100+ legitimate hardcoded-secret/dangerous-function hits in normal embedded Linux userspace. If the scoring formula in `backend/src/routes/security.ts` uses flat linear penalties per finding, the total blows past 100 almost immediately and floors at `0` for any moderately bad firmware, losing all differentiation. The formula should use diminishing-returns (sqrt) scaling with per-category caps that sum to ≤100.
 
 ---
 
 ## ⚠️ Known Limitations
 
-- Some scan flows currently simulate progression via `setTimeout` rather than performing live analysis — this is being replaced incrementally.
-- APIs and schemas may change without notice while the project is in active development.
 - No automated test suite yet.
-
----
-
-## ❓ FAQ
-
-**Q: Why does it say "Use pnpm instead" when I try `npm install`?**
-This workspace enforces pnpm via a `preinstall` script. Install pnpm (`npm i -g pnpm`) and use that instead.
-
-**Q: Is the security analysis using real tools like Binwalk or Ghidra right now?**
-Not yet end-to-end — some pipelines currently run against simulated/seeded data while live integrations are built out. See [Roadmap](#-roadmap).
-
-**Q: What ports do the frontend and API run on locally?**
-Frontend: `25439`. API server: `8080`.
+- Malware detection falls back to local heuristics (suspicious string matching + entropy) when `VIRUSTOTAL_API_KEY` isn't set.
+- AI executive summaries are skipped when `GEMINI_API_KEY` isn't set.
 
 ---
 
 ## 📄 License
 
-Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for details (add one if not already present).
-
----
-
-## 👥 Maintainers
-
-Maintained by [Redkrossresearch](https://github.com/Redkrossresearch).
+Distributed under the **MIT License**. See `LICENSE` for details.
 
 ---
 

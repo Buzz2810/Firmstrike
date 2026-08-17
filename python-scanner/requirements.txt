@@ -1,3 +1,5 @@
 fastapi
 uvicorn
 python-multipart
+binwalk3PySquashfsImage
+PySquashfsImage

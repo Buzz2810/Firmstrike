@@ -841,6 +841,96 @@ def extract_gzip(
     return 1
 
 
+def extract_squashfs_partitions(
+    firmware_path: Path,
+    extract_path: Path,
+    modules: list[Any],
+) -> int:
+    """Extract any SquashFS filesystems found by binwalk's signature
+    scan using PySquashfsImage (a pure-Python SquashFS reader).
+
+    binwalk3's built-in extraction shells out to the external
+    `sasquatch` tool, which has no Windows build — so on Windows the
+    SquashFS root filesystem (where secrets/dangerous functions
+    actually live) never gets unpacked even though it's correctly
+    *detected*. This works around that by extracting it ourselves,
+    with no external binary required.
+
+    Returns the number of files extracted.
+    """
+
+    try:
+        from PySquashfsImage import SquashFsImage
+        from PySquashfsImage.extract import extract_dir
+    except ImportError:
+        return 0
+
+    extracted_count = 0
+
+    try:
+        data = firmware_path.read_bytes()
+    except Exception:
+        return 0
+
+    for module in modules:
+        for res in getattr(module, "results", []) or []:
+
+            module_name = (
+                getattr(res, "module", "") or ""
+            ).lower()
+
+            description = (
+                getattr(res, "description", "") or ""
+            ).lower()
+
+            if (
+                "squashfs" not in module_name
+                and "squashfs" not in description
+            ):
+                continue
+
+            offset = getattr(res, "offset", None)
+
+            if offset is None:
+                continue
+
+            dest = (
+                extract_path
+                / f"squashfs_{offset:x}"
+            )
+
+            try:
+                dest.parent.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+
+                chunk = data[offset:]
+
+                with SquashFsImage.from_bytes(
+                    chunk
+                ) as image:
+
+                    extract_dir(
+                        image.root,
+                        dest=str(dest),
+                        force=True,
+                        quiet=True,
+                    )
+
+                    for _ in dest.rglob("*"):
+                        extracted_count += 1
+
+            except Exception as exc:
+                print(
+                    "[SquashFS extraction warning]",
+                    f"offset={offset:#x}:",
+                    exc,
+                )
+
+    return extracted_count
+
+
 def try_binwalk(
     firmware_path: Path,
     extract_path: Path,
@@ -852,14 +942,93 @@ def try_binwalk(
         "message": "",
     }
 
+    # Preferred path: the `binwalk3` pip package. It bundles the
+    # binwalk v3 Rust binary (including a Windows x64 build), so it
+    # works via `import binwalk` without needing a separate CLI
+    # install or PATH entry — this is what makes it usable from a
+    # plain Windows venv.
+    try:
+        import binwalk as binwalk3  # type: ignore
+
+        result["available"] = True
+
+        modules = binwalk3.scan(
+            str(firmware_path),
+            signature=True,
+            extract=True,
+            directory=str(extract_path),
+            matryoshka=False,
+            quiet=True,
+        )
+
+        total_results = sum(
+            len(getattr(module, "results", []) or [])
+            for module in modules
+        )
+
+        all_errors = []
+        for module in modules:
+            all_errors.extend(
+                getattr(module, "errors", []) or []
+            )
+
+        result["success"] = True
+
+        squashfs_files = extract_squashfs_partitions(
+            firmware_path,
+            extract_path,
+            modules,
+        )
+
+        if squashfs_files:
+            result["message"] = (
+                f"binwalk3 (python) found "
+                f"{total_results} signature(s); "
+                f"extracted {squashfs_files} file(s) "
+                f"from SquashFS via PySquashfsImage"
+            )
+            return result
+
+        if all_errors:
+            result["message"] = (
+                f"binwalk3 (python) found "
+                f"{total_results} signature(s); "
+                f"errors: {' | '.join(all_errors)[:2000]}"
+            )
+        else:
+            result["message"] = (
+                f"binwalk3 (python) found "
+                f"{total_results} signature(s)"
+            )
+
+        return result
+
+    except ImportError:
+        # binwalk3 not installed — fall through and try the
+        # system `binwalk` CLI instead.
+        pass
+
+    except Exception as exc:
+        # binwalk3 was importable but the scan/extract itself
+        # failed (e.g. Windows symlink privilege error on
+        # extraction). Record it, then still try the CLI as a
+        # fallback rather than giving up.
+        result["message"] = (
+            f"binwalk3 (python) failed: {exc}"
+        )
+
     command = shutil.which(
         "binwalk"
     )
 
     if not command:
-        result["message"] = (
-            "binwalk command not found"
-        )
+        if not result["message"]:
+            result["message"] = (
+                "binwalk not found: run "
+                "'pip install binwalk3' in this venv, "
+                "or install the binwalk CLI and ensure "
+                "it is on PATH"
+            )
 
         return result
 
@@ -1078,6 +1247,88 @@ def analyze_text_file(
     )
 
 
+BINARY_FILE_TYPES = {
+    "binary",
+    "ELF binary",
+    "shared-library",
+    "firmware",
+}
+
+
+def analyze_binary_file(
+    path: Path,
+    relative_path: str,
+) -> tuple[
+    list[dict],
+    list[dict],
+]:
+    """Scan a compiled/binary file (ELF, .bin, .so, extension-less
+    executables like busybox/httpd) by extracting its printable ASCII
+    strings and running the same secret/dangerous-function patterns
+    against each string, similar to `strings file | grep`."""
+
+    secrets = []
+    dangerous = []
+
+    try:
+        if (
+            path.stat().st_size
+            > 25 * 1024 * 1024
+        ):
+            # cap how much we read for very large binaries
+            data = path.read_bytes()[: 25 * 1024 * 1024]
+        else:
+            data = path.read_bytes()
+
+    except Exception:
+        return secrets, dangerous
+
+    strings = extract_ascii_strings(data)
+
+    for (
+        line_number,
+        line,
+    ) in enumerate(strings, start=1):
+
+        for (
+            secret_type,
+            pattern,
+        ) in SECRET_PATTERNS:
+
+            if pattern.search(line):
+
+                secrets.append(
+                    {
+                        "type": secret_type,
+                        "value": line[:500],
+                        "file": relative_path,
+                        "line": line_number,
+                        "severity": "high",
+                    }
+                )
+
+        for function in DANGEROUS_FUNCTIONS:
+
+            if function in line:
+
+                dangerous.append(
+                    {
+                        "name": function.rstrip("("),
+                        "file": relative_path,
+                        "line": line_number,
+                        "risk": "high",
+                        "description":
+                            (
+                                f"Potentially dangerous "
+                                f"function {function} "
+                                f"detected."
+                            ),
+                    }
+                )
+
+    return secrets, dangerous
+
+
 def analyze_files(
     extract_path: Path,
     files: list[dict[str, Any]],
@@ -1096,24 +1347,40 @@ def analyze_files(
             / relative.lstrip("/")
         )
 
+        file_type = item.get("type", "file")
+
         if (
             path.suffix.lower()
-            not in SUPPORTED_TEXT_EXTENSIONS
+            in SUPPORTED_TEXT_EXTENSIONS
         ):
-            continue
+            (
+                s,
+                d,
+                v,
+            ) = analyze_text_file(
+                path,
+                relative,
+            )
 
-        (
-            s,
-            d,
-            v,
-        ) = analyze_text_file(
-            path,
-            relative,
-        )
+            vulnerabilities.extend(v)
+
+        elif (
+            file_type in BINARY_FILE_TYPES
+            or path.suffix == ""
+        ):
+            # No recognised text extension, but it's an executable /
+            # binary blob (ELF, .bin, .so, busybox, etc.) — scan its
+            # extracted strings instead of skipping it outright.
+            s, d = analyze_binary_file(
+                path,
+                relative,
+            )
+
+        else:
+            continue
 
         secrets.extend(s)
         dangerous.extend(d)
-        vulnerabilities.extend(v)
 
     return {
         "secrets": secrets[:500],
